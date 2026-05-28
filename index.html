@@ -7,6 +7,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#dc2626">
     <title>Fire.net.pk - Invoice Manager</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -61,6 +65,128 @@ html {
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
+
+
+
+        /* ================= SYNC STATUS ================= */
+        .sync-indicator {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+            transition: all 0.3s;
+        }
+        .sync-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .sync-online  { background: #ecfdf5; color: #059669; }
+        .sync-online  .sync-dot { background: #10b981; animation: pulse-green 2s infinite; }
+        .sync-offline { background: #fef3c7; color: #92400e; }
+        .sync-offline .sync-dot { background: #f59e0b; }
+        .sync-saving  { background: #eff6ff; color: #1d4ed8; }
+        .sync-saving  .sync-dot { background: #3b82f6; animation: spin 1s linear infinite; }
+        .sync-error   { background: #fef2f2; color: #991b1b; }
+        .sync-error   .sync-dot { background: #ef4444; }
+        .sync-local   { background: #f1f5f9; color: #475569; }
+        .sync-local   .sync-dot { background: #94a3b8; }
+        @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+        /* ================= FIREBASE SETUP MODAL ================= */
+        .firebase-setup-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .firebase-setup-overlay.hidden { display: none; }
+        .firebase-setup-card {
+            background: white; border-radius: 20px; padding: 32px 28px;
+            width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+        }
+        .firebase-step { display: flex; gap: 12px; margin-bottom: 16px; }
+        .firebase-step-num {
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            background: linear-gradient(135deg, #dc2626, #2563eb);
+            color: white; font-size: 13px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .firebase-step-text { font-size: 13px; color: #475569; line-height: 1.6; }
+        .firebase-config-input {
+            width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0;
+            border-radius: 8px; font-size: 12px; font-family: monospace;
+            background: #f8fafc; margin-bottom: 6px; resize: none;
+        }
+        .firebase-config-input:focus { outline: none; border-color: #dc2626; }
+
+        /* ================= LOGIN SCREEN ================= */
+        #loginScreen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e293b 100%);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        #loginScreen.hidden { display: none; }
+        .login-card {
+            background: white; border-radius: 24px; padding: 40px 32px;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+        }
+        .login-logo {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: 800; color: white; margin: 0 auto 16px;
+        }
+        .login-title { text-align: center; font-size: 22px; font-weight: 800; color: var(--dark); margin-bottom: 4px; }
+        .login-subtitle { text-align: center; font-size: 13px; color: var(--gray); margin-bottom: 28px; }
+        .login-tabs { display: flex; background: var(--gray-light); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+        .login-tab { flex: 1; padding: 9px; text-align: center; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--gray); transition: all 0.2s; border: none; background: none; font-family: inherit; }
+        .login-tab.active { background: white; color: var(--dark); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .login-form { display: flex; flex-direction: column; gap: 14px; }
+        .login-input-group { display: flex; flex-direction: column; gap: 5px; }
+        .login-label { font-size: 13px; font-weight: 600; color: var(--dark); }
+        .login-input {
+            padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+            font-size: 15px; font-family: inherit; transition: all 0.2s; background: white;
+            -webkit-appearance: none;
+        }
+        .login-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+        .login-btn {
+            padding: 14px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; font-size: 15px; font-weight: 700; cursor: pointer;
+            font-family: inherit; margin-top: 4px; transition: all 0.2s;
+        }
+        .login-btn:active { transform: scale(0.98); }
+        .login-error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--danger); display: none; }
+        .login-error.show { display: block; }
+        .login-divider { text-align: center; color: var(--gray); font-size: 12px; margin: 4px 0; }
+        .customer-pin-info { background: #eff6ff; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--secondary); margin-bottom: 4px; }
+
+        /* ================= CUSTOMER PORTAL SCREEN ================= */
+        #customerPortalScreen {
+            position: fixed; inset: 0; z-index: 9998;
+            background: var(--gray-light);
+            display: none; flex-direction: column; overflow-y: auto;
+        }
+        #customerPortalScreen.active { display: flex; }
+        .portal-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 20px 20px 20px; color: white;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .portal-header h1 { font-size: 18px; font-weight: 800; }
+        .portal-header p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .portal-logout-btn {
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .portal-body { padding: 16px; flex: 1; max-width: 800px; margin: 0 auto; width: 100%; }
+        .portal-section { background: white; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+        .portal-section-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .portal-invoice-row { padding: 14px 20px; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center; }
+        .portal-invoice-row:last-child { border-bottom: none; }
+        .portal-stat { background: white; border-radius: var(--radius-sm); padding: 16px; text-align: center; box-shadow: var(--shadow); }
+        .portal-stat-value { font-size: 20px; font-weight: 800; }
+        .portal-stat-label { font-size: 11px; color: var(--gray); margin-top: 4px; }
 
         /* ================= MOBILE BOTTOM NAV ================= */
         .mobile-nav {
@@ -1555,6 +1681,10 @@ html {
             <span class="logo-text">Fire.net.pk</span>
         </div>
         <div class="header-actions">
+            <span id="syncIndicatorMobile" class="sync-indicator sync-local" style="font-size:10px;padding:3px 7px;cursor:pointer;" onclick="showFirebaseSetup()">
+                <span class="sync-dot"></span><span id="syncTextMobile">Local</span>
+            </span>
+            <button class="header-btn" onclick="adminLogout()" title="Logout"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
             <button class="header-btn" onclick="showNotifications()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></i></button>
             <button class="header-btn" onclick="showProfile()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg></i></button>
         </div>
@@ -1562,7 +1692,133 @@ html {
 
     <!-- Desktop Sidebar -->
     <div class="app-container">
-        <aside class="sidebar" id="sidebar">
+        
+
+    <!-- ========== FIREBASE SETUP MODAL ========== -->
+    <div id="firebaseSetupOverlay" class="firebase-setup-overlay hidden">
+        <div class="firebase-setup-card">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="width:52px;height:52px;background:linear-gradient(135deg,#f97316,#dc2626);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px;">🔥</div>
+                <h2 style="font-size:20px;font-weight:800;color:#1e293b;margin-bottom:4px;">Connect Firebase</h2>
+                <p style="font-size:13px;color:#64748b;">Sync your data across all devices for free</p>
+            </div>
+
+            <div class="firebase-step">
+                <div class="firebase-step-num">1</div>
+                <div class="firebase-step-text">Go to <strong>console.firebase.google.com</strong> → Add project → name it anything → disable Analytics → Create</div>
+            </div>
+            <div class="firebase-step">
+                <div class="firebase-step-num">2</div>
+                <div class="firebase-step-text">Click <strong>Firestore Database</strong> → Create database → Start in <strong>test mode</strong> → Choose <strong>asia-south1</strong> → Done</div>
+            </div>
+            <div class="firebase-step">
+                <div class="firebase-step-num">3</div>
+                <div class="firebase-step-text">⚙️ Project Settings → Your apps → click <strong>&lt;/&gt;</strong> (Web) → Register → Copy the <strong>firebaseConfig</strong> object below</div>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">Paste your firebaseConfig JSON here:</label>
+                <textarea id="firebaseConfigInput" class="firebase-config-input" rows="8" placeholder='{
+  "apiKey": "AIza...",
+  "authDomain": "your-project.firebaseapp.com",
+  "projectId": "your-project-id",
+  "storageBucket": "your-project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123:web:abc123"
+}'></textarea>
+                <div id="firebaseConfigError" style="color:#ef4444;font-size:12px;display:none;margin-top:4px;"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="skipFirebase()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;color:#64748b;font-family:inherit;">Use Local Only</button>
+                <button onclick="connectFirebase()" style="flex:2;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#f97316,#dc2626);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">🔥 Connect Firebase</button>
+            </div>
+
+            <div style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;font-size:12px;color:#166534;line-height:1.6;">
+                ✅ Free tier: 1GB storage, 50K reads/day, 20K writes/day — plenty for any small business<br>
+                ✅ Works offline — syncs automatically when back online<br>
+                ✅ Your config is saved locally — only you can access your data
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== LOGIN SCREEN ========== -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-logo" id="loginLogo">F</div>
+            <div class="login-title" id="loginAppName">Fire.net.pk</div>
+            <div class="login-subtitle" id="loginTagline">Invoice Manager — Secure Login</div>
+
+            <div class="login-tabs">
+                <button class="login-tab active" id="tabAdmin" onclick="switchLoginTab('admin')">Admin Login</button>
+                <button class="login-tab" id="tabCustomer" onclick="switchLoginTab('customer')">Customer Portal</button>
+            </div>
+
+            <!-- Admin Login -->
+            <div id="adminLoginForm" class="login-form">
+                <div class="login-input-group">
+                    <label class="login-label">Username</label>
+                    <input type="text" class="login-input" id="adminUsername" placeholder="Enter username" autocomplete="username">
+                </div>
+                <div class="login-input-group">
+                    <label class="login-label">Password</label>
+                    <div style="position:relative;">
+                        <input type="password" class="login-input" id="adminPassword" placeholder="Enter password" autocomplete="current-password" style="padding-right:44px;" onkeydown="if(event.key==='Enter') doAdminLogin()">
+                        <button type="button" onclick="togglePwdVisibility('adminPassword', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray);padding:4px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12zM12 9a3 3 0 100 6 3 3 0 000-6z"/></svg></button>
+                    </div>
+                </div>
+                <div class="login-error" id="adminLoginError">Incorrect username or password. Please try again.</div>
+                <button class="login-btn" onclick="doAdminLogin()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg> Sign In as Admin</button>
+                <div class="login-divider">Default: admin / admin123 (change in Settings)</div>
+            </div>
+
+            <!-- Customer Login -->
+            <div id="customerLoginForm" class="login-form" style="display:none;">
+                <div class="customer-pin-info"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zM12 16v-4M12 8h.01"/></svg> Enter your email or phone number and the PIN shared by your service provider.</div>
+                <div class="login-input-group">
+                    <label class="login-label">Email or Phone</label>
+                    <input type="text" class="login-input" id="customerIdentifier" placeholder="your@email.com or 0300-1234567" autocomplete="username">
+                </div>
+                <div class="login-input-group">
+                    <label class="login-label">PIN</label>
+                    <div style="position:relative;">
+                        <input type="password" class="login-input" id="customerPin" placeholder="Enter your PIN" maxlength="8" inputmode="numeric" style="padding-right:44px;letter-spacing:4px;font-size:20px;" onkeydown="if(event.key==='Enter') doCustomerLogin()">
+                        <button type="button" onclick="togglePwdVisibility('customerPin', this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray);padding:4px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12zM12 9a3 3 0 100 6 3 3 0 000-6z"/></svg></button>
+                    </div>
+                </div>
+                <div class="login-error" id="customerLoginError">Customer not found or incorrect PIN. Contact your service provider.</div>
+                <button class="login-btn" onclick="doCustomerLogin()" style="background:linear-gradient(135deg,var(--success),#059669);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg> View My Portal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== CUSTOMER PORTAL SCREEN ========== -->
+    <div id="customerPortalScreen">
+        <div class="portal-header">
+            <div>
+                <h1 id="portalWelcomeName">Welcome</h1>
+                <p id="portalWelcomeSub">Your invoices and account summary</p>
+            </div>
+            <button class="portal-logout-btn" onclick="customerLogout()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg> Logout</button>
+        </div>
+        <div class="portal-body">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;" id="portalStats"></div>
+            <div class="portal-section" id="portalInvoicesSection">
+                <div class="portal-section-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM12 18c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0-10v1m0 6v1"/></svg> Invoices</div>
+                <div id="portalInvoicesList"></div>
+            </div>
+            <div class="portal-section" id="portalQuotesSection">
+                <div class="portal-section-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8 17h8M8 13h8M8 9h5"/></svg> Quotations</div>
+                <div id="portalQuotesList"></div>
+            </div>
+            <div class="portal-section" id="portalJobsSection">
+                <div class="portal-section-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/></svg> Active Jobs</div>
+                <div id="portalJobsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo-container">
                     <div class="logo-icon">F</div>
@@ -1618,12 +1874,19 @@ html {
                 </a>
             </nav>
             <div class="sidebar-footer">
+                <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+                    <span id="syncIndicatorDesktop" class="sync-indicator sync-local" style="cursor:pointer;" onclick="showFirebaseSetup()">
+                        <span class="sync-dot"></span><span id="syncTextDesktop">Local Only</span>
+                    </span>
+                    <button onclick="showFirebaseSetup()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:10px;cursor:pointer;font-family:inherit;padding:2px 6px;border-radius:4px;" title="Cloud Sync Settings">☁ Sync</button>
+                </div>
                 <div class="user-info">
                     <div class="user-avatar">A</div>
                     <div class="user-details">
                         <div class="user-name">Admin User</div>
                         <div class="user-role">Administrator</div>
                     </div>
+                    <button onclick="adminLogout()" title="Logout" style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.7);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
                 </div>
             </div>
         </aside>
@@ -2214,6 +2477,17 @@ html {
                                 <div class="toggle-desc">Allow discount per line item</div>
                             </div>
                             <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                        </div>
+                    </div>
+
+                                        <!-- Firebase Sync Card -->
+                    <div class="settings-card">
+                        <h3>🔥 Firebase Cloud Sync</h3>
+                        <p style="font-size:13px;color:var(--gray);margin-bottom:14px;">Sync all data across all devices in real time. Free for small businesses.</p>
+                        <div id="firebaseStatusCard" style="padding:12px;border-radius:10px;background:var(--gray-light);margin-bottom:14px;font-size:13px;color:var(--dark);"></div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-primary btn-block" onclick="showFirebaseSetup()">⚙ Configure Firebase</button>
+                            <button class="btn btn-ghost" id="fbDisconnectBtn" onclick="disconnectFirebase()" style="display:none;">Disconnect</button>
                         </div>
                     </div>
 
@@ -3249,8 +3523,17 @@ html {
                 email: 'admin@fire.net.pk',
                 phone: '+92-300-1234567',
                 avatar: 'A'
+            },
+            auth: {
+                adminUsername: 'admin',
+                adminPasswordHash: btoa('admin123'),
+                autoLogoutMinutes: 0,
+                customerPins: {}
             }
         };
+
+        let currentSession = null; // { type: 'admin' } or { type: 'customer', customerId: '...' }
+        let autoLogoutTimer = null;
 
         let currentDoc = null;
         let currentFilter = { invoices: 'all', quotations: 'all', payments: 'all' };
@@ -3271,9 +3554,298 @@ html {
             loadData();
             initColorPickers();
             setupEventListeners();
-            renderAll();
-            updateFabVisibility();
+
+            // Apply branding to login screen
+            const ls = appData.settings;
+            const loginLogo = document.getElementById('loginLogo');
+            const loginAppName = document.getElementById('loginAppName');
+            const loginTagline = document.getElementById('loginTagline');
+            if (loginLogo) loginLogo.textContent = ls.logoText || 'F';
+            if (loginAppName) loginAppName.textContent = ls.appName || 'Fire.net.pk';
+            if (loginTagline) loginTagline.textContent = (ls.appTagline || 'Invoice Manager') + ' — Secure Login';
+
+            // Pre-fill admin username
+            const usernameInput = document.getElementById('adminUsername');
+            if (usernameInput) usernameInput.value = appData.auth?.adminUsername || 'admin';
+
+            // Show login screen — app content hidden until authenticated
+            showLoginScreen();
+
+            // Init Firebase if config saved, else show setup prompt if not skipped
+            const fbConfig = getSavedFirebaseConfig();
+            if (fbConfig) {
+                setSyncStatus('saving', 'Connecting...');
+                initFirebase(fbConfig);
+            } else {
+                setSyncStatus('local', 'Local Only');
+                if (!localStorage.getItem('firenet_fb_skipped')) {
+                    // Show setup prompt after short delay (don't block login)
+                    setTimeout(() => {
+                        document.getElementById('firebaseSetupOverlay').classList.remove('hidden');
+                    }, 1500);
+                }
+            }
+            updateFirebaseStatusCard();
         });
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('customerPortalScreen').classList.remove('active');
+        }
+
+        function hideLoginScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+        }
+
+        function switchLoginTab(tab) {
+            document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
+            document.getElementById('tabCustomer').classList.toggle('active', tab === 'customer');
+            document.getElementById('adminLoginForm').style.display = tab === 'admin' ? 'flex' : 'none';
+            document.getElementById('customerLoginForm').style.display = tab === 'customer' ? 'flex' : 'none';
+            document.getElementById('adminLoginError').classList.remove('show');
+            document.getElementById('customerLoginError').classList.remove('show');
+        }
+
+        function togglePwdVisibility(inputId, btn) {
+            const inp = document.getElementById(inputId);
+            if (!inp) return;
+            const isHidden = inp.type === 'password';
+            inp.type = isHidden ? 'text' : 'password';
+        }
+
+        function doAdminLogin() {
+            const username = (document.getElementById('adminUsername').value || '').trim();
+            const password = document.getElementById('adminPassword').value;
+            const errEl = document.getElementById('adminLoginError');
+
+            const storedUser = appData.auth?.adminUsername || 'admin';
+            const storedHash = appData.auth?.adminPasswordHash || btoa('admin123');
+
+            if (username === storedUser && btoa(password) === storedHash) {
+                errEl.classList.remove('show');
+                currentSession = { type: 'admin' };
+                hideLoginScreen();
+                renderAll();
+                updateFabVisibility();
+                startAutoLogout();
+                showToast('success', 'Welcome!', 'Logged in as ' + (appData.profile?.name || 'Admin'));
+            } else {
+                errEl.classList.add('show');
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        function doCustomerLogin() {
+            const identifier = (document.getElementById('customerIdentifier').value || '').trim().toLowerCase();
+            const pin = document.getElementById('customerPin').value;
+            const errEl = document.getElementById('customerLoginError');
+
+            // Find customer by email or phone
+            const customer = appData.customers.find(c => {
+                const emailMatch = (c.email || '').toLowerCase() === identifier;
+                const phoneMatch = (c.phone || '').replace(/\D/g,'') === identifier.replace(/\D/g,'');
+                return emailMatch || phoneMatch;
+            });
+
+            if (!customer) { errEl.classList.add('show'); return; }
+
+            const storedPin = appData.auth?.customerPins?.[customer.id];
+            if (!storedPin || btoa(pin) !== storedPin) { errEl.classList.add('show'); return; }
+
+            errEl.classList.remove('show');
+            currentSession = { type: 'customer', customerId: customer.id };
+            document.getElementById('loginScreen').classList.add('hidden');
+            showCustomerPortal(customer.id);
+        }
+
+        function adminLogout() {
+            currentSession = null;
+            if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+            document.getElementById('adminPassword').value = '';
+            showLoginScreen();
+        }
+
+        function customerLogout() {
+            currentSession = null;
+            document.getElementById('customerPin').value = '';
+            document.getElementById('customerIdentifier').value = '';
+            document.getElementById('customerPortalScreen').classList.remove('active');
+            showLoginScreen();
+        }
+
+        function startAutoLogout() {
+            if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+            const mins = parseInt(appData.auth?.autoLogoutMinutes) || 0;
+            if (mins > 0) {
+                autoLogoutTimer = setTimeout(() => {
+                    if (currentSession?.type === 'admin') {
+                        showToast('warning', 'Session Expired', 'You have been logged out');
+                        adminLogout();
+                    }
+                }, mins * 60 * 1000);
+            }
+        }
+
+        // ==================== CUSTOMER PORTAL ====================
+        function showCustomerPortal(customerId) {
+            const customer = appData.customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            document.getElementById('portalWelcomeName').textContent = 'Welcome, ' + customer.name;
+            document.getElementById('portalWelcomeSub').textContent = (customer.company || '') + ' — Account Portal';
+            document.getElementById('customerPortalScreen').classList.add('active');
+
+            const invoices = appData.invoices.filter(i => i.customerId === customerId);
+            const quotations = appData.quotations.filter(q => q.customerId === customerId);
+            const jobs = appData.jobs.filter(j => j.customerId === customerId && j.status !== 'completed' && j.status !== 'cancelled');
+
+            const totalBilled = invoices.reduce((s, i) => s + (i.grandTotal || 0), 0);
+            const totalPaid = invoices.reduce((s, i) => s + getInvoicePaidAmount(i.id), 0);
+            const outstanding = totalBilled - totalPaid;
+
+            // Stats
+            document.getElementById('portalStats').innerHTML = `
+                <div class="portal-stat">
+                    <div class="portal-stat-value" style="color:var(--secondary);">PKR ${formatNumber(totalBilled)}</div>
+                    <div class="portal-stat-label">Total Billed</div>
+                </div>
+                <div class="portal-stat">
+                    <div class="portal-stat-value" style="color:var(--success);">PKR ${formatNumber(totalPaid)}</div>
+                    <div class="portal-stat-label">Paid</div>
+                </div>
+                <div class="portal-stat">
+                    <div class="portal-stat-value" style="color:${outstanding>0?'var(--danger)':'var(--success)'};">PKR ${formatNumber(outstanding)}</div>
+                    <div class="portal-stat-label">Outstanding</div>
+                </div>
+            `;
+
+            // Invoices
+            const invList = document.getElementById('portalInvoicesList');
+            if (invoices.length === 0) {
+                invList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No invoices yet</div>';
+            } else {
+                invList.innerHTML = invoices.map(inv => {
+                    const paid = getInvoicePaidAmount(inv.id);
+                    const bal = Math.max(0, (inv.grandTotal||0) - paid);
+                    const sc = getStatusClass(inv.status);
+                    return `<div class="portal-invoice-row">
+                        <div>
+                            <div style="font-weight:700;font-size:14px;">${inv.number}</div>
+                            <div style="font-size:12px;color:var(--gray);">${formatDate(inv.date)} · Due: ${formatDate(inv.dueDate)}</div>
+                            ${bal > 0 ? `<div style="font-size:12px;color:var(--danger);font-weight:600;">Balance: PKR ${formatNumber(bal)}</div>` : ''}
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:800;font-size:15px;">PKR ${formatNumber(inv.grandTotal||0)}</div>
+                            <span class="status-badge ${sc}" style="font-size:11px;">${capitalize(inv.status)}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Quotations
+            const qList = document.getElementById('portalQuotesList');
+            if (quotations.length === 0) {
+                qList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No quotations yet</div>';
+            } else {
+                qList.innerHTML = quotations.map(q => {
+                    const sc = getStatusClass(q.status);
+                    return `<div class="portal-invoice-row">
+                        <div>
+                            <div style="font-weight:700;font-size:14px;">${q.number}</div>
+                            <div style="font-size:12px;color:var(--gray);">${formatDate(q.date)} · Valid: ${formatDate(q.dueDate)}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:800;font-size:15px;">PKR ${formatNumber(q.grandTotal||0)}</div>
+                            <span class="status-badge ${sc}" style="font-size:11px;">${capitalize(q.status)}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Jobs
+            const jList = document.getElementById('portalJobsList');
+            if (jobs.length === 0) {
+                jList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No active jobs</div>';
+            } else {
+                jList.innerHTML = jobs.map(j => {
+                    const sc = getStatusClass(j.status);
+                    return `<div class="portal-invoice-row">
+                        <div>
+                            <div style="font-weight:700;font-size:14px;">${j.number} — ${j.title}</div>
+                            <div style="font-size:12px;color:var(--gray);">Due: ${formatDate(j.dueDate)}</div>
+                            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                                <div style="flex:1;background:var(--gray-light);height:6px;border-radius:3px;overflow:hidden;max-width:120px;">
+                                    <div style="background:linear-gradient(90deg,var(--primary),var(--secondary));height:100%;width:${j.progress}%;border-radius:3px;"></div>
+                                </div>
+                                <span style="font-size:11px;font-weight:700;color:var(--primary);">${j.progress}%</span>
+                            </div>
+                        </div>
+                        <span class="status-badge ${sc}" style="font-size:11px;align-self:flex-start;">${capitalize(j.status)}</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        // ==================== SECURITY SETTINGS ====================
+        function saveSecuritySettings() {
+            const username = (document.getElementById('secAdminUsername').value || '').trim();
+            const pwd = document.getElementById('secAdminPassword').value;
+            const pwdConfirm = document.getElementById('secAdminPasswordConfirm').value;
+            const autoLogout = parseInt(document.getElementById('secAutoLogout').value) || 0;
+
+            if (!username) { showToast('error', 'Error', 'Username cannot be empty'); return; }
+            if (pwd && pwd !== pwdConfirm) { showToast('error', 'Error', 'Passwords do not match'); return; }
+            if (pwd && pwd.length < 6) { showToast('error', 'Error', 'Password must be at least 6 characters'); return; }
+
+            appData.auth.adminUsername = username;
+            if (pwd) appData.auth.adminPasswordHash = btoa(pwd);
+            appData.auth.autoLogoutMinutes = autoLogout;
+            saveData();
+            showToast('success', 'Saved', 'Security settings updated!');
+        }
+
+        function renderCustomerPinList() {
+            const container = document.getElementById('customerPinList');
+            if (!container) return;
+            if (appData.customers.length === 0) {
+                container.innerHTML = '<div style="color:var(--gray);font-size:13px;">No customers yet. Add customers first.</div>';
+                return;
+            }
+            container.innerHTML = appData.customers.map(c => {
+                const hasPin = !!appData.auth?.customerPins?.[c.id];
+                return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:600;font-size:13px;">${c.name}</div>
+                        <div style="font-size:11px;color:var(--gray);">${c.email || c.phone || '-'}</div>
+                    </div>
+                    <input type="password" placeholder="${hasPin?'Change PIN':'Set PIN'}" id="pin_${c.id}" maxlength="8" inputmode="numeric" style="width:100px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;letter-spacing:2px;font-family:inherit;" autocomplete="new-password">
+                    <button onclick="saveCustomerPin('${c.id}')" style="padding:8px 12px;background:var(--secondary);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Set</button>
+                    ${hasPin ? `<button onclick="removeCustomerPin('${c.id}')" style="padding:8px 10px;background:#fef2f2;color:var(--danger);border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">Remove</button>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function saveCustomerPin(customerId) {
+            const inp = document.getElementById('pin_' + customerId);
+            if (!inp) return;
+            const pin = inp.value.trim();
+            if (!pin || pin.length < 4) { showToast('error', 'Error', 'PIN must be at least 4 digits'); return; }
+            if (!appData.auth.customerPins) appData.auth.customerPins = {};
+            appData.auth.customerPins[customerId] = btoa(pin);
+            saveData();
+            inp.value = '';
+            inp.placeholder = 'Change PIN';
+            showToast('success', 'PIN Set', 'Customer portal access enabled');
+            renderCustomerPinList();
+        }
+
+        function removeCustomerPin(customerId) {
+            if (!confirm('Remove portal access for this customer?')) return;
+            delete appData.auth.customerPins[customerId];
+            saveData();
+            showToast('success', 'Removed', 'Portal access removed');
+            renderCustomerPinList();
+        }
 
 
         // ==================== INLINE SVG ICON HELPER ====================
@@ -3339,6 +3911,9 @@ html {
                     }
                     if (parsed.profile) {
                         appData.profile = { ...appData.profile, ...parsed.profile };
+                    }
+                    if (parsed.auth) {
+                        appData.auth = { ...appData.auth, ...parsed.auth };
                     }
                 } catch(e) { console.log('Error loading saved data:', e); }
             }
@@ -3409,8 +3984,209 @@ html {
             }
         }
 
+        // ==================== FIREBASE SYNC ENGINE ====================
+        let db = null;
+        let fbApp = null;
+        let syncUnsubscribe = null;
+        let saveDebounceTimer = null;
+        const FB_DOC_PATH = 'firenet/appdata';
+
+        function getSavedFirebaseConfig() {
+            try {
+                const raw = localStorage.getItem('firenet_fb_config');
+                return raw ? JSON.parse(raw) : null;
+            } catch(e) { return null; }
+        }
+
+        function setSyncStatus(status, text) {
+            ['Desktop','Mobile'].forEach(suffix => {
+                const ind = document.getElementById('syncIndicator' + suffix);
+                const txt = document.getElementById('syncText' + suffix);
+                if (!ind) return;
+                ind.className = 'sync-indicator sync-' + status;
+                if (txt) txt.textContent = text;
+            });
+            updateFirebaseStatusCard();
+        }
+
+        function updateFirebaseStatusCard() {
+            const card = document.getElementById('firebaseStatusCard');
+            const disconnBtn = document.getElementById('fbDisconnectBtn');
+            if (!card) return;
+            const cfg = getSavedFirebaseConfig();
+            if (cfg && db) {
+                card.style.background = '#ecfdf5';
+                card.innerHTML = '<strong style="color:#059669;">🟢 Connected to Firebase</strong><br><span style="color:#64748b;font-size:12px;">Project: ' + (cfg.projectId || 'unknown') + ' · Real-time sync active</span>';
+                if (disconnBtn) disconnBtn.style.display = 'inline-flex';
+            } else if (cfg && !db) {
+                card.style.background = '#fef3c7';
+                card.innerHTML = '<strong style="color:#92400e;">🟡 Config saved — connecting...</strong><br><span style="color:#64748b;font-size:12px;">Check your internet connection</span>';
+                if (disconnBtn) disconnBtn.style.display = 'inline-flex';
+            } else {
+                card.style.background = '#f1f5f9';
+                card.innerHTML = '<strong style="color:#475569;">⚪ Local storage only</strong><br><span style="color:#64748b;font-size:12px;">Data stays on this device. Click Configure to enable cloud sync.</span>';
+                if (disconnBtn) disconnBtn.style.display = 'none';
+            }
+        }
+
+        function showFirebaseSetup() {
+            const overlay = document.getElementById('firebaseSetupOverlay');
+            if (!overlay) return;
+            overlay.classList.remove('hidden');
+            // Pre-fill if config already saved
+            const cfg = getSavedFirebaseConfig();
+            if (cfg) {
+                document.getElementById('firebaseConfigInput').value = JSON.stringify(cfg, null, 2);
+            }
+        }
+
+        function skipFirebase() {
+            document.getElementById('firebaseSetupOverlay').classList.add('hidden');
+            localStorage.setItem('firenet_fb_skipped', '1');
+        }
+
+        async function connectFirebase() {
+            const raw = (document.getElementById('firebaseConfigInput').value || '').trim();
+            const errEl = document.getElementById('firebaseConfigError');
+            errEl.style.display = 'none';
+
+            let config;
+            try {
+                // Support both object literal style and JSON
+                let cleaned = raw.replace(/\/\/.*/g, '').replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+                // Try to extract just the object if wrapped in variable declaration
+                const match = cleaned.match(/\{[\s\S]*\}/);
+                if (!match) throw new Error('No config object found');
+                config = JSON.parse(match[0]);
+            } catch(e) {
+                errEl.textContent = 'Invalid config format. Please paste the firebaseConfig object as JSON.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (!config.apiKey || !config.projectId) {
+                errEl.textContent = 'Config missing apiKey or projectId. Please check your Firebase config.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            localStorage.setItem('firenet_fb_config', JSON.stringify(config));
+            document.getElementById('firebaseSetupOverlay').classList.add('hidden');
+            setSyncStatus('saving', 'Connecting...');
+            await initFirebase(config);
+        }
+
+        function disconnectFirebase() {
+            if (!confirm('Disconnect Firebase? Your data will remain locally but will stop syncing.')) return;
+            localStorage.removeItem('firenet_fb_config');
+            localStorage.removeItem('firenet_fb_skipped');
+            if (syncUnsubscribe) { syncUnsubscribe(); syncUnsubscribe = null; }
+            db = null;
+            if (fbApp) { try { fbApp.delete(); } catch(e){} fbApp = null; }
+            setSyncStatus('local', 'Local Only');
+            showToast('info', 'Disconnected', 'Firebase sync disabled. Data saved locally.');
+        }
+
+        async function initFirebase(config) {
+            try {
+                // Delete existing app if any
+                if (fbApp) { try { await fbApp.delete(); } catch(e){} }
+                fbApp = firebase.initializeApp(config, 'firenet-' + Date.now());
+                db = fbApp.firestore();
+                db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+                db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
+                setSyncStatus('saving', 'Syncing...');
+
+                // First load from Firestore
+                const doc = await db.collection('firenet').doc('appdata').get();
+                if (doc.exists) {
+                    const remote = doc.data();
+                    mergeRemoteData(remote);
+                    applySettingsToDOM();
+                    renderAll();
+                    setSyncStatus('online', 'Synced ✓');
+                    showToast('success', 'Firebase Connected', 'Data loaded from cloud!');
+                } else {
+                    // First time — push local data to Firestore
+                    await pushToFirestore();
+                    setSyncStatus('online', 'Synced ✓');
+                    showToast('success', 'Firebase Connected', 'Local data saved to cloud!');
+                }
+
+                // Subscribe to real-time updates
+                startRealtimeListener();
+                updateFirebaseStatusCard();
+
+            } catch(err) {
+                console.error('Firebase init error:', err);
+                setSyncStatus('error', 'Sync Error');
+                showToast('error', 'Firebase Error', err.message || 'Connection failed. Check your config.');
+                db = null;
+            }
+        }
+
+        function startRealtimeListener() {
+            if (syncUnsubscribe) syncUnsubscribe();
+            if (!db) return;
+            syncUnsubscribe = db.collection('firenet').doc('appdata')
+                .onSnapshot(doc => {
+                    if (doc.exists && doc.metadata.hasPendingWrites === false) {
+                        const remote = doc.data();
+                        if (remote._lastSaved !== appData._lastSaved) {
+                            mergeRemoteData(remote);
+                            applySettingsToDOM();
+                            renderAll();
+                            setSyncStatus('online', 'Synced ✓');
+                        }
+                    }
+                }, err => {
+                    console.error('Realtime listener error:', err);
+                    setSyncStatus('error', 'Sync Error');
+                });
+        }
+
+        function mergeRemoteData(remote) {
+            const keys = ['invoices','quotations','payments','bankAccounts','wallets','customers','items','jobs','settings','profile','auth'];
+            keys.forEach(k => {
+                if (remote[k] !== undefined) appData[k] = remote[k];
+            });
+            if (remote._lastSaved) appData._lastSaved = remote._lastSaved;
+        }
+
+        async function pushToFirestore() {
+            if (!db) return;
+            try {
+                appData._lastSaved = Date.now();
+                await db.collection('firenet').doc('appdata').set(JSON.parse(JSON.stringify(appData)));
+            } catch(err) {
+                console.error('Firestore push error:', err);
+                setSyncStatus('error', 'Save Failed');
+                throw err;
+            }
+        }
+
         function saveData() {
+            // Always save locally first (instant, offline fallback)
             localStorage.setItem('firenet_data', JSON.stringify(appData));
+
+            if (!db) {
+                setSyncStatus('local', 'Local Only');
+                return;
+            }
+
+            // Debounce cloud save — avoid hammering Firestore on rapid changes
+            setSyncStatus('saving', 'Saving...');
+            clearTimeout(saveDebounceTimer);
+            saveDebounceTimer = setTimeout(async () => {
+                try {
+                    await pushToFirestore();
+                    setSyncStatus('online', 'Synced ✓');
+                } catch(err) {
+                    setSyncStatus('error', 'Save Failed');
+                    showToast('warning', 'Sync Failed', 'Saved locally. Will retry when online.');
+                }
+            }, 800);
         }
 
         function initColorPickers() {
@@ -3447,6 +4223,15 @@ html {
 
         // ==================== NAVIGATION ====================
         function showView(viewName) {
+            if (viewName === 'settings') {
+                setTimeout(() => {
+                    const su = document.getElementById('secAdminUsername');
+                    const sal = document.getElementById('secAutoLogout');
+                    if (su) su.value = appData.auth?.adminUsername || 'admin';
+                    if (sal) sal.value = appData.auth?.autoLogoutMinutes || 0;
+                    renderCustomerPinList();
+                }, 50);
+            }
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             const target = document.getElementById('view-' + viewName);
             if (target) target.classList.add('active');
@@ -5848,6 +6633,7 @@ html {
                 const confirmText = prompt('Type "DELETE" to confirm:');
                 if (confirmText === 'DELETE') {
                     localStorage.removeItem('firenet_data');
+                    if (db) { db.collection('firenet').doc('appdata').delete().catch(()=>{}); }
                     location.reload();
                 } else {
                     showToast('info', 'Cancelled', 'Data deletion cancelled');
@@ -6734,6 +7520,7 @@ html {
         function renderAll() {
             renderStats();
             renderFinance();
+            renderCustomerPinList();
             renderInvoices();
             renderQuotations();
             renderJobs();
