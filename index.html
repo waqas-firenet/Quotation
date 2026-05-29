@@ -2116,21 +2116,6 @@ html {
                         <div class="stat-value" id="finUnpaid" style="font-size:18px;color:var(--danger);">PKR 0</div>
                         <div class="stat-label">Outstanding</div>
                     </div>
-                    <div class="stat-card" style="border-left:4px solid #16a34a;">
-                        <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M2 8c1.5 0 3 1 4.5 1S9 8 10.5 8 13 9 14.5 9 17 8 18.5 8 21 9 22 9V4H2v4zM2 16c1.5 0 3 1 4.5 1S9 16 10.5 16 13 17 14.5 17 17 16 18.5 16 21 17 22 17v-5c-1 0-3.5-1-5-1s-3.5 1-5 1-3.5-1-5-1S4 12 2 12v4z"/></svg></div>
-                        <div class="stat-value" id="finCashInHand" style="font-size:18px;color:#16a34a;">PKR 0</div>
-                        <div class="stat-label">💵 Cash in Hand</div>
-                    </div>
-                    <div class="stat-card" style="border-left:4px solid #0ea5e9;">
-                        <div class="stat-icon blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10"/></svg></div>
-                        <div class="stat-value" id="finBankBalance" style="font-size:18px;color:#0ea5e9;">PKR 0</div>
-                        <div class="stat-label">🏦 Bank / Online</div>
-                    </div>
-                    <div class="stat-card" style="border-left:4px solid #8b5cf6;">
-                        <div class="stat-icon" style="background:#f3e8ff;color:#8b5cf6;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
-                        <div class="stat-value" id="finWalletBalance" style="font-size:18px;color:#8b5cf6;">PKR 0</div>
-                        <div class="stat-label">📱 Wallet Balance</div>
-                    </div>
                 </div>
 
                 <!-- Profit Bar -->
@@ -3745,102 +3730,212 @@ html {
         }
 
         // ==================== CUSTOMER PORTAL ====================
+        // Safe helpers for portal
+        function _pFmt(n) { try { return formatNumber(n); } catch(e) { return n; } }
+        function _pDate(d) { try { return formatDate(d); } catch(e) { return d||''; } }
+        function _pSc(s) { try { return getStatusClass(s); } catch(e) { return ''; } }
+        function _pCap(s) { try { return capitalize(s); } catch(e) { return s||''; } }
+        function _pPaid(id) { try { return getInvoicePaidAmount(id); } catch(e) { return 0; } }
+
+        function _portalItemsTable(items) {
+            if (!items || !items.length) return '';
+            return `<div style="overflow-x:auto;margin-top:10px;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                    <thead><tr style="background:#f8fafc;">
+                        <th style="padding:7px 10px;text-align:left;color:#64748b;border-bottom:1px solid #e2e8f0;">Description</th>
+                        <th style="padding:7px 5px;text-align:center;color:#64748b;border-bottom:1px solid #e2e8f0;">Qty</th>
+                        <th style="padding:7px 5px;text-align:right;color:#64748b;border-bottom:1px solid #e2e8f0;">Price</th>
+                        <th style="padding:7px 10px;text-align:right;color:#64748b;border-bottom:1px solid #e2e8f0;">Total</th>
+                    </tr></thead>
+                    <tbody>${items.map(it=>`<tr style="border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:7px 10px;color:#1e293b;">${it.description||it.name||'-'}</td>
+                        <td style="padding:7px 5px;text-align:center;color:#64748b;">${it.qty||1}</td>
+                        <td style="padding:7px 5px;text-align:right;color:#64748b;">PKR ${_pFmt(it.price||0)}</td>
+                        <td style="padding:7px 10px;text-align:right;font-weight:700;">PKR ${_pFmt((it.qty||1)*(it.price||0))}</td>
+                    </tr>`).join('')}</tbody>
+                </table></div>`;
+        }
+
+        function _portalPaymentBlock() {
+            const banks = appData.bankAccounts||[];
+            const wallets = appData.wallets||[];
+            if (!banks.length && !wallets.length) return '';
+            let h = `<div style="margin-top:10px;background:#f0fdf4;border-radius:10px;padding:12px;border:1px solid #bbf7d0;">
+                <div style="font-size:12px;font-weight:800;color:#16a34a;margin-bottom:8px;">💳 Pay via Bank / Wallet</div>`;
+            banks.forEach(b => {
+                h += `<div style="margin-bottom:6px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;font-size:11px;">
+                    <b>🏦 ${b.bankName||''}</b>${b.isDefault?' <span style="background:#0ea5e9;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">DEFAULT</span>':''}
+                    ${b.accountName?`<div style="color:#64748b;">Account: ${b.accountName}</div>`:''}
+                    ${b.accountNumber?`<div style="color:#64748b;">Acc #: <b>${b.accountNumber}</b></div>`:''}
+                    ${b.iban?`<div style="color:#64748b;">IBAN: <b>${b.iban}</b></div>`:''}
+                </div>`;
+            });
+            wallets.forEach(w => {
+                h += `<div style="margin-bottom:6px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;font-size:11px;">
+                    <b>📱 ${w.provider||''}</b>${w.isDefault?' <span style="background:#0ea5e9;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;">DEFAULT</span>':''}
+                    ${w.accountName?`<div style="color:#64748b;">${w.accountName}</div>`:''}
+                    ${w.mobileNumber?`<div style="color:#64748b;">Mobile: <b>${w.mobileNumber}</b></div>`:''}
+                </div>`;
+            });
+            return h + '</div>';
+        }
+
+        function _portalWaBtn(doc, bal, type) {
+            const phone = (appData.settings?.phone||'').replace(/[^0-9]/g,'');
+            if (!phone) return '';
+            const biz = appData.settings?.companyName||appData.settings?.appName||'Fire.net.pk';
+            const label = type==='quotation' ? 'approve quotation' : 'arrange payment for invoice';
+            const msg = type==='quotation'
+                ? `Hello *${biz}*,%0A%0AI would like to approve quotation *${doc.number}* (PKR ${_pFmt(doc.grandTotal||0)}).%0APlease proceed.%0AThank you!`
+                : `Hello *${biz}*,%0A%0AI would like to ${label}:%0A%0A%F0%9F%93%84 *${doc.number}*%0A%F0%9F%92%B0 Balance: *PKR ${_pFmt(bal)}*%0A%0APlease confirm payment details.%0AThank you!`;
+            const label2 = type==='quotation' ? '✅ Approve via WhatsApp' : '💬 Pay via WhatsApp';
+            const bg = '#25d366';
+            return `<a href="https://wa.me/${phone}?text=${msg}" target="_blank"
+                style="display:flex;align-items:center;justify-content:center;gap:8px;background:${bg};color:#fff;text-decoration:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;margin-top:10px;">${label2}</a>`;
+        }
+
         function showCustomerPortal(customerId) {
-            const customer = appData.customers.find(c => c.id === customerId);
-            if (!customer) return;
+            try {
+                const customer = appData.customers.find(c => c.id === customerId);
+                if (!customer) { console.error('Portal: customer not found', customerId); return; }
 
-            document.getElementById('portalWelcomeName').textContent = 'Welcome, ' + customer.name;
-            document.getElementById('portalWelcomeSub').textContent = (customer.company || '') + ' — Account Portal';
-            document.getElementById('customerPortalScreen').classList.add('active');
+                document.getElementById('portalWelcomeName').textContent = 'Welcome, ' + customer.name;
+                document.getElementById('portalWelcomeSub').textContent = (customer.company ? customer.company + ' — ' : '') + 'Account Portal';
+                document.getElementById('customerPortalScreen').classList.add('active');
 
-            const invoices = appData.invoices.filter(i => i.customerId === customerId);
-            const quotations = appData.quotations.filter(q => q.customerId === customerId);
-            const jobs = appData.jobs.filter(j => j.customerId === customerId && j.status !== 'completed' && j.status !== 'cancelled');
+                const invoices = (appData.invoices||[]).filter(i => i.customerId === customerId);
+                const quotations = (appData.quotations||[]).filter(q => q.customerId === customerId);
+                const jobs = (appData.jobs||[]).filter(j => j.customerId === customerId && j.status !== 'completed' && j.status !== 'cancelled');
 
-            const totalBilled = invoices.reduce((s, i) => s + (i.grandTotal || 0), 0);
-            const totalPaid = invoices.reduce((s, i) => s + getInvoicePaidAmount(i.id), 0);
-            const outstanding = totalBilled - totalPaid;
+                const totalBilled = invoices.reduce((s,i) => s+(i.grandTotal||0), 0);
+                const totalPaid = invoices.reduce((s,i) => s+_pPaid(i.id), 0);
+                const outstanding = totalBilled - totalPaid;
 
-            // Stats
-            document.getElementById('portalStats').innerHTML = `
-                <div class="portal-stat">
-                    <div class="portal-stat-value" style="color:var(--secondary);">PKR ${formatNumber(totalBilled)}</div>
-                    <div class="portal-stat-label">Total Billed</div>
-                </div>
-                <div class="portal-stat">
-                    <div class="portal-stat-value" style="color:var(--success);">PKR ${formatNumber(totalPaid)}</div>
-                    <div class="portal-stat-label">Paid</div>
-                </div>
-                <div class="portal-stat">
-                    <div class="portal-stat-value" style="color:${outstanding>0?'var(--danger)':'var(--success)'};">PKR ${formatNumber(outstanding)}</div>
-                    <div class="portal-stat-label">Outstanding</div>
-                </div>
-            `;
+                const statsEl = document.getElementById('portalStats');
+                if (statsEl) statsEl.innerHTML = `
+                    <div class="portal-stat"><div class="portal-stat-value" style="color:var(--secondary);">PKR ${_pFmt(totalBilled)}</div><div class="portal-stat-label">Total Billed</div></div>
+                    <div class="portal-stat"><div class="portal-stat-value" style="color:var(--success);">PKR ${_pFmt(totalPaid)}</div><div class="portal-stat-label">Paid</div></div>
+                    <div class="portal-stat"><div class="portal-stat-value" style="color:${outstanding>0?'var(--danger)':'var(--success)'};">PKR ${_pFmt(outstanding)}</div><div class="portal-stat-label">Outstanding</div></div>`;
 
-            // Invoices
-            const invList = document.getElementById('portalInvoicesList');
-            if (invoices.length === 0) {
-                invList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No invoices yet</div>';
-            } else {
-                invList.innerHTML = invoices.map(inv => {
-                    const paid = getInvoicePaidAmount(inv.id);
-                    const bal = Math.max(0, (inv.grandTotal||0) - paid);
-                    const sc = getStatusClass(inv.status);
-                    return `<div class="portal-invoice-row">
-                        <div>
-                            <div style="font-weight:700;font-size:14px;">${inv.number}</div>
-                            <div style="font-size:12px;color:var(--gray);">${formatDate(inv.date)} · Due: ${formatDate(inv.dueDate)}</div>
-                            ${bal > 0 ? `<div style="font-size:12px;color:var(--danger);font-weight:600;">Balance: PKR ${formatNumber(bal)}</div>` : ''}
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-weight:800;font-size:15px;">PKR ${formatNumber(inv.grandTotal||0)}</div>
-                            <span class="status-badge ${sc}" style="font-size:11px;">${capitalize(inv.status)}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-
-            // Quotations
-            const qList = document.getElementById('portalQuotesList');
-            if (quotations.length === 0) {
-                qList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No quotations yet</div>';
-            } else {
-                qList.innerHTML = quotations.map(q => {
-                    const sc = getStatusClass(q.status);
-                    return `<div class="portal-invoice-row">
-                        <div>
-                            <div style="font-weight:700;font-size:14px;">${q.number}</div>
-                            <div style="font-size:12px;color:var(--gray);">${formatDate(q.date)} · Valid: ${formatDate(q.dueDate)}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-weight:800;font-size:15px;">PKR ${formatNumber(q.grandTotal||0)}</div>
-                            <span class="status-badge ${sc}" style="font-size:11px;">${capitalize(q.status)}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-
-            // Jobs
-            const jList = document.getElementById('portalJobsList');
-            if (jobs.length === 0) {
-                jList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No active jobs</div>';
-            } else {
-                jList.innerHTML = jobs.map(j => {
-                    const sc = getStatusClass(j.status);
-                    return `<div class="portal-invoice-row">
-                        <div>
-                            <div style="font-weight:700;font-size:14px;">${j.number} — ${j.title}</div>
-                            <div style="font-size:12px;color:var(--gray);">Due: ${formatDate(j.dueDate)}</div>
-                            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
-                                <div style="flex:1;background:var(--gray-light);height:6px;border-radius:3px;overflow:hidden;max-width:120px;">
-                                    <div style="background:linear-gradient(90deg,var(--primary),var(--secondary));height:100%;width:${j.progress}%;border-radius:3px;"></div>
+                // ── INVOICES ──────────────────────────────────────────────
+                const invList = document.getElementById('portalInvoicesList');
+                if (invList) {
+                    if (!invoices.length) {
+                        invList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No invoices yet</div>';
+                    } else {
+                        invList.innerHTML = invoices.map(inv => {
+                            const paid = _pPaid(inv.id);
+                            const bal = Math.max(0, (inv.grandTotal||0) - paid);
+                            const sc = _pSc(inv.status);
+                            const isPending = inv.status==='pending'||inv.status==='overdue';
+                            const did = 'pi_' + inv.id.replace(/[^a-z0-9]/gi,'');
+                            return `<div style="border-bottom:1px solid #f1f5f9;">
+                                <div class="portal-invoice-row" onclick="var d=document.getElementById('${did}');d.style.display=d.style.display==='none'?'block':'none'" style="cursor:pointer;">
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                            <span style="font-weight:800;font-size:14px;">${inv.number||'-'}</span>
+                                            <span class="status-badge ${sc}" style="font-size:10px;">${_pCap(inv.status)}</span>
+                                            ${isPending&&bal>0?`<span style="background:#fef2f2;color:#ef4444;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;">PKR ${_pFmt(bal)} due</span>`:''}
+                                        </div>
+                                        <div style="font-size:11px;color:#94a3b8;">${inv.subject||''}</div>
+                                        <div style="font-size:11px;color:#94a3b8;">Issued: ${_pDate(inv.date)} · Due: ${_pDate(inv.dueDate)}</div>
+                                    </div>
+                                    <div style="text-align:right;flex-shrink:0;">
+                                        <div style="font-weight:800;font-size:15px;">PKR ${_pFmt(inv.grandTotal||0)}</div>
+                                        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Tap ▾</div>
+                                    </div>
                                 </div>
-                                <span style="font-size:11px;font-weight:700;color:var(--primary);">${j.progress}%</span>
-                            </div>
-                        </div>
-                        <span class="status-badge ${sc}" style="font-size:11px;align-self:flex-start;">${capitalize(j.status)}</span>
-                    </div>`;
-                }).join('');
+                                <div id="${did}" style="display:none;padding:0 14px 14px;background:#fafbfc;">
+                                    ${_portalItemsTable(inv.items)}
+                                    <div style="margin-top:10px;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                                        ${inv.subtotal?`<div style="color:#64748b;">Subtotal</div><div style="text-align:right;font-weight:600;">PKR ${_pFmt(inv.subtotal)}</div>`:''}
+                                        ${(inv.totalDiscount||0)>0?`<div style="color:#16a34a;">Discount</div><div style="text-align:right;color:#16a34a;font-weight:600;">-PKR ${_pFmt(inv.totalDiscount)}</div>`:''}
+                                        ${(inv.totalTax||0)>0?`<div style="color:#64748b;">Tax</div><div style="text-align:right;font-weight:600;">PKR ${_pFmt(inv.totalTax)}</div>`:''}
+                                        <div style="font-weight:800;border-top:1px solid #e2e8f0;padding-top:4px;">Total</div>
+                                        <div style="font-weight:800;text-align:right;border-top:1px solid #e2e8f0;padding-top:4px;">PKR ${_pFmt(inv.grandTotal||0)}</div>
+                                        ${paid>0?`<div style="color:#16a34a;font-weight:600;">Paid</div><div style="text-align:right;color:#16a34a;font-weight:600;">PKR ${_pFmt(paid)}</div>`:''}
+                                        ${bal>0?`<div style="font-weight:800;color:#ef4444;">Balance Due</div><div style="font-weight:800;color:#ef4444;text-align:right;">PKR ${_pFmt(bal)}</div>`:''}
+                                    </div>
+                                    ${isPending ? _portalPaymentBlock() : ''}
+                                    ${isPending&&bal>0 ? _portalWaBtn(inv,bal,'invoice') : ''}
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                }
+
+                // ── QUOTATIONS ────────────────────────────────────────────
+                const qList = document.getElementById('portalQuotesList');
+                if (qList) {
+                    if (!quotations.length) {
+                        qList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No quotations yet</div>';
+                    } else {
+                        qList.innerHTML = quotations.map(q => {
+                            const sc = _pSc(q.status);
+                            const did = 'pq_' + q.id.replace(/[^a-z0-9]/gi,'');
+                            return `<div style="border-bottom:1px solid #f1f5f9;">
+                                <div class="portal-invoice-row" onclick="var d=document.getElementById('${did}');d.style.display=d.style.display==='none'?'block':'none'" style="cursor:pointer;">
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                            <span style="font-weight:800;font-size:14px;">${q.number||'-'}</span>
+                                            <span class="status-badge ${sc}" style="font-size:10px;">${_pCap(q.status)}</span>
+                                        </div>
+                                        <div style="font-size:11px;color:#94a3b8;">${q.subject||''}</div>
+                                        <div style="font-size:11px;color:#94a3b8;">Issued: ${_pDate(q.date)} · Valid: ${_pDate(q.dueDate)}</div>
+                                    </div>
+                                    <div style="text-align:right;flex-shrink:0;">
+                                        <div style="font-weight:800;font-size:15px;">PKR ${_pFmt(q.grandTotal||0)}</div>
+                                        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Tap ▾</div>
+                                    </div>
+                                </div>
+                                <div id="${did}" style="display:none;padding:0 14px 14px;background:#fafbfc;">
+                                    ${_portalItemsTable(q.items)}
+                                    <div style="margin-top:10px;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                                        ${q.subtotal?`<div style="color:#64748b;">Subtotal</div><div style="text-align:right;font-weight:600;">PKR ${_pFmt(q.subtotal)}</div>`:''}
+                                        ${(q.totalDiscount||0)>0?`<div style="color:#16a34a;">Discount</div><div style="text-align:right;color:#16a34a;font-weight:600;">-PKR ${_pFmt(q.totalDiscount)}</div>`:''}
+                                        ${(q.totalTax||0)>0?`<div style="color:#64748b;">Tax</div><div style="text-align:right;font-weight:600;">PKR ${_pFmt(q.totalTax)}</div>`:''}
+                                        <div style="font-weight:800;border-top:1px solid #e2e8f0;padding-top:4px;">Total</div>
+                                        <div style="font-weight:800;text-align:right;border-top:1px solid #e2e8f0;padding-top:4px;">PKR ${_pFmt(q.grandTotal||0)}</div>
+                                    </div>
+                                    ${q.notes?`<div style="margin-top:8px;font-size:11px;color:#64748b;background:#fff;border-radius:8px;padding:8px;border:1px solid #e2e8f0;">📝 ${q.notes}</div>`:''}
+                                    ${q.status==='sent'||q.status==='draft' ? _portalWaBtn(q,0,'quotation') : ''}
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                }
+
+                // ── JOBS ──────────────────────────────────────────────────
+                const jList = document.getElementById('portalJobsList');
+                if (jList) {
+                    if (!jobs.length) {
+                        jList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No active jobs</div>';
+                    } else {
+                        jList.innerHTML = jobs.map(j => {
+                            const sc = _pSc(j.status);
+                            return `<div class="portal-invoice-row">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+                                        <span style="font-weight:800;font-size:14px;">${j.number||''}</span>
+                                        <span class="status-badge ${sc}" style="font-size:10px;">${_pCap(j.status)}</span>
+                                    </div>
+                                    <div style="font-size:13px;font-weight:600;color:#334155;">${j.title||''}</div>
+                                    <div style="font-size:11px;color:#94a3b8;">Due: ${_pDate(j.dueDate)}</div>
+                                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+                                        <div style="flex:1;background:#e2e8f0;height:8px;border-radius:4px;overflow:hidden;">
+                                            <div style="background:linear-gradient(90deg,var(--primary),var(--secondary));height:100%;width:${j.progress||0}%;border-radius:4px;"></div>
+                                        </div>
+                                        <span style="font-size:12px;font-weight:800;color:var(--primary);">${j.progress||0}%</span>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                }
+            } catch(err) {
+                console.error('Portal render error:', err);
+                const invList = document.getElementById('portalInvoicesList');
+                if (invList) invList.innerHTML = `<div style="padding:16px;color:red;font-size:12px;">Error loading data: ${err.message}</div>`;
             }
         }
 
@@ -5422,30 +5517,16 @@ html {
             setColor('finProfit', calc.profit >= 0 ? 'var(--success)' : 'var(--danger)');
             setColor('finMargin', calc.margin >= 0 ? 'var(--success)' : 'var(--danger)');
 
-            const cashInHand = (appData.payments || [])
-                .filter(p => p.method === 'cash')
-                .reduce((s, p) => s + (p.amount || 0), 0);
-            const bankBalance = (appData.payments || [])
-                .filter(p => ['bank','cheque','online'].includes(p.method))
-                .reduce((s, p) => s + (p.amount || 0), 0);
-            const walletBalance = (appData.wallets || [])
-                .reduce((s, w) => s + (parseFloat(w.balance) || 0), 0);
-            set('finCashInHand',    'PKR ' + formatNumber(cashInHand));
-            set('finBankBalance',   'PKR ' + formatNumber(bankBalance));
-            set('finWalletBalance', 'PKR ' + formatNumber(walletBalance));
-
             // Render bar chart
             const barEl = document.getElementById('finBar');
             if (barEl) {
                 const maxVal = Math.max(calc.revenue, calc.cost, 1);
                 const bars = [
-                    { label: 'Revenue',       value: calc.revenue,     color: 'var(--secondary)' },
-                    { label: 'Collected',     value: calc.paid,        color: 'var(--success)' },
-                    { label: 'Outstanding',   value: calc.unpaid,      color: 'var(--danger)' },
-                    { label: 'Net Profit',    value: calc.profit,      color: calc.profit >= 0 ? '#16a34a' : 'var(--danger)' },
-                    { label: 'Cash in Hand',  value: cashInHand,       color: '#16a34a' },
-                    { label: 'Bank / Online', value: bankBalance,      color: '#0ea5e9' },
+                    { label: 'Revenue', value: calc.revenue, color: 'var(--secondary)' },
+                    { label: 'Cost', value: calc.cost, color: 'var(--warning)' },
+                    { label: 'Profit', value: calc.profit, color: calc.profit >= 0 ? 'var(--success)' : 'var(--danger)' },
                     { label: 'Extra Charges', value: calc.extraCharges, color: 'var(--gray)' },
+                    { label: 'Outstanding', value: calc.unpaid, color: 'var(--danger)' },
                 ];
                 barEl.innerHTML = bars.map(b => {
                     const pct = Math.max(0, (Math.abs(b.value) / maxVal) * 100);
@@ -5663,7 +5744,6 @@ html {
                                     <button class="action-btn pdf" onclick="exportSinglePDF('${inv.id}', 'invoice')" title="PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9 13h1.5a1.5 1.5 0 000-3H9v5m4-5h2m-2 2h2"/></svg></i></button>
                                     <button class="action-btn whatsapp" onclick="shareSingleWhatsApp('${inv.id}', 'invoice')" title="WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></i></button>
                                     <button class="action-btn" onclick="deleteInvoice('${inv.id}')" title="Delete" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button>
-                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="sendReminder('${inv.id}')" title="WhatsApp Reminder" style="display:inline-flex;align-items:center;gap:5px;background:#e7faf0;color:#25d366;border:none;border-radius:8px;padding:0 10px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Remind</button>`:''}
                                 </div>
                             </td>
                         </tr>`;
@@ -5701,7 +5781,6 @@ html {
                                     <div style="font-size: 13px; color: var(--gray); margin-bottom: 4px;">${customer?.name || 'Unknown'}</div>
                                     ${dueBadge ? `<div style="margin-bottom: 4px;">${dueBadge}</div>` : ''}
                                     <div style="font-size: 12px; color: var(--gray);">Due: ${formatDate(inv.dueDate)}</div>
-                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="event.stopPropagation();sendReminder('${inv.id}')" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Send Reminder</button>`:''}
                                     ${paidAmt > 0 ? `<div style="margin-top: 6px; display: flex; gap: 10px;">
                                         <span style="font-size: 12px; color: var(--success); font-weight: 600;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3"/></svg></i> Paid: PKR ${formatNumber(paidAmt)}</span>
                                         ${remaining > 0 ? `<span style="font-size: 12px; color: var(--danger); font-weight: 600;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M5 2h14M5 22h14M17 2v6l-5 4 5 4v6M7 2v6l5 4-5 4v6"/></svg></i> Due: PKR ${formatNumber(remaining)}</span>` : ''}
@@ -5718,7 +5797,86 @@ html {
             }
         }
 
+
+        function autoExpireQuotations() {
+            const today = new Date(); today.setHours(0,0,0,0);
+            let changed = false;
+            (appData.quotations||[]).forEach(q => {
+                if (q.status==='sent'||q.status==='draft') {
+                    const due = new Date(q.dueDate); due.setHours(0,0,0,0);
+                    if (due < today) { q.status='expired'; changed=true; }
+                }
+            });
+            if (changed) saveData();
+        }
+
+        function acceptQuotation(id) {
+            const q = appData.quotations.find(q=>q.id===id);
+            if (!q) return;
+            q.status='accepted'; q.acceptedAt=new Date().toISOString();
+            saveData(); renderAll();
+            showToast('success','✅ Accepted',`Quotation ${q.number} accepted`);
+            setTimeout(()=>{
+                if (q.convertedToInvoiceId) return;
+                const overlay=document.createElement('div');
+                overlay.id='convertPrompt';
+                overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+                overlay.innerHTML=`<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
+                    <div style="width:56px;height:56px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;">✅</div>
+                    <h3 style="font-size:17px;font-weight:800;color:#1e293b;margin:0 0 6px;">Quotation Accepted!</h3>
+                    <p style="font-size:13px;color:#64748b;margin:0 0 20px;">Convert <strong>${q.number}</strong> into an invoice now?</p>
+                    <div style="display:flex;gap:10px;flex-direction:column;">
+                        <button onclick="convertQuotationToInvoice('${q.id}');document.getElementById('convertPrompt').remove();"
+                            style="background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;">📄 Convert to Invoice</button>
+                        <button onclick="document.getElementById('convertPrompt').remove();"
+                            style="background:#f1f5f9;color:#64748b;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;">Later</button>
+                    </div></div>`;
+                document.body.appendChild(overlay);
+            },400);
+        }
+        window.acceptQuotation=acceptQuotation;
+
+        function expireQuotation(id) {
+            const q=appData.quotations.find(q=>q.id===id);
+            if(!q) return;
+            if(!confirm(`Mark quotation ${q.number} as expired?`)) return;
+            q.status='expired'; saveData(); renderAll();
+            showToast('info','Expired',`Quotation ${q.number} marked as expired`);
+        }
+        window.expireQuotation=expireQuotation;
+
+        function convertQuotationToInvoice(id) {
+            const q=appData.quotations.find(q=>q.id===id);
+            if(!q) return;
+            if(appData.invoices.some(i=>i.fromQuotationId===id)){showToast('warning','Already Converted','Already converted to invoice');return;}
+            const invoice={
+                id:'inv_'+Date.now(), number:generateDocNumber('invoice'),
+                customerId:q.customerId,
+                date:new Date().toISOString().split('T')[0],
+                dueDate:new Date(Date.now()+14*86400000).toISOString().split('T')[0],
+                subject:q.subject||q.number,
+                items:JSON.parse(JSON.stringify(q.items||[])),
+                terms:q.terms||appData.settings.terms, notes:q.notes||'',
+                status:'pending', fromQuotationId:id,
+                globalDiscountType:q.globalDiscountType, globalDiscountValue:q.globalDiscountValue,
+                extraCharges:JSON.parse(JSON.stringify(q.extraCharges||[])),
+                subtotal:q.subtotal, totalDiscount:q.totalDiscount,
+                totalTax:q.totalTax, totalExtraCharges:q.totalExtraCharges,
+                grandTotal:q.grandTotal, createdAt:new Date().toISOString()
+            };
+            appData.invoices.push(invoice);
+            q.status='accepted'; q.convertedToInvoiceId=invoice.id;
+            saveData(); renderAll();
+            showToast('success','🎉 Invoice Created',`Invoice ${invoice.number} created from ${q.number}`);
+            setTimeout(()=>{
+                const customer=appData.customers.find(c=>c.id===invoice.customerId);
+                if(typeof showInvoiceReminderPrompt==='function') showInvoiceReminderPrompt(invoice,customer,null);
+            },600);
+        }
+        window.convertQuotationToInvoice=convertQuotationToInvoice;
+
         function renderQuotations() {
+            autoExpireQuotations();
             const tbody = document.getElementById('quotationsTable');
             const mobileList = document.getElementById('quotationsMobileList');
             let quotations = [...appData.quotations];
@@ -5759,6 +5917,10 @@ html {
                                     <button class="action-btn pdf" onclick="exportSinglePDF('${qtn.id}', 'quotation')" title="PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9 13h1.5a1.5 1.5 0 000-3H9v5m4-5h2m-2 2h2"/></svg></i></button>
                                     <button class="action-btn whatsapp" onclick="shareSingleWhatsApp('${qtn.id}', 'quotation')" title="WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></i></button>
                                     <button class="action-btn" onclick="deleteQuotation('${qtn.id}')" title="Delete" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button>
+                                    ${qtn.status!=='accepted'&&qtn.status!=='expired'?`<button onclick="acceptQuotation('${qtn.id}')" style="display:inline-flex;align-items:center;gap:4px;background:#ecfdf5;color:#16a34a;border:none;border-radius:8px;padding:0 9px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">✅ Accept</button>`:''}
+                                    ${qtn.status==='accepted'&&!qtn.convertedToInvoiceId?`<button onclick="convertQuotationToInvoice('${qtn.id}')" style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;border:none;border-radius:8px;padding:0 9px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">📄 To Invoice</button>`:''}
+                                    ${qtn.status!=='accepted'&&qtn.status!=='expired'?`<button onclick="expireQuotation('${qtn.id}')" style="display:inline-flex;align-items:center;gap:4px;background:#fef2f2;color:#dc2626;border:none;border-radius:8px;padding:0 9px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">❌ Expire</button>`:''}
+                                    ${qtn.convertedToInvoiceId?`<span style="font-size:10px;color:#16a34a;font-weight:700;">✅ Invoiced</span>`:''}
                                 </div>
                             </td>
                         </tr>`;
@@ -5774,21 +5936,31 @@ html {
                         const customer = appData.customers.find(c => c.id === qtn.customerId);
                         const statusClass = getStatusClass(qtn.status);
                         const statusIcon = getStatusIcon(qtn.status);
-                        return `<div class="swipe-card" onclick="showDocActions('${qtn.id}', 'quotation')">
-                            <div class="swipe-card-content" style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                <div style="flex: 1; min-width: 0;">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                        <strong style="font-size: 15px;">${qtn.number || '-'}</strong>
-                                        <span class="status-badge ${statusClass}" style="font-size: 11px; padding: 3px 8px;">${faIcon(statusIcon)} ${capitalize(qtn.status)}</span>
+                        return `<div class="swipe-card">
+                            <div class="swipe-card-content" onclick="showDocActions('${qtn.id}','quotation')" style="display:flex;justify-content:space-between;align-items:flex-start;">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                                        <strong style="font-size:15px;">${qtn.number||'-'}</strong>
+                                        <span class="status-badge ${statusClass}" style="font-size:11px;padding:3px 8px;">${faIcon(statusIcon)} ${capitalize(qtn.status)}</span>
+                                        ${qtn.convertedToInvoiceId?`<span style="font-size:10px;background:#ecfdf5;color:#16a34a;padding:2px 7px;border-radius:6px;font-weight:700;">✅ Invoiced</span>`:''}
                                     </div>
-                                    <div style="font-size: 13px; color: var(--gray); margin-bottom: 4px;">${customer?.name || 'Unknown'}</div>
-                                    <div style="font-size: 12px; color: var(--gray);">Valid until: ${formatDate(qtn.dueDate)}</div>
+                                    <div style="font-size:13px;color:var(--gray);margin-bottom:4px;">${customer?.name||'Unknown'}</div>
+                                    <div style="font-size:12px;color:var(--gray);">Valid until: ${formatDate(qtn.dueDate)}</div>
                                 </div>
-                                <div style="text-align: right; flex-shrink: 0; margin-left: 12px;">
-                                    <div style="font-size: 18px; font-weight: 800; color: var(--primary);">PKR ${formatNumber(qtn.grandTotal || 0)}</div>
-                                    <div style="font-size: 11px; color: var(--gray); margin-top: 2px;">${formatDate(qtn.date)}</div>
+                                <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+                                    <div style="font-size:18px;font-weight:800;color:var(--primary);">PKR ${formatNumber(qtn.grandTotal||0)}</div>
+                                    <div style="font-size:11px;color:var(--gray);margin-top:2px;">${formatDate(qtn.date)}</div>
                                 </div>
                             </div>
+                            ${qtn.status!=='accepted'&&qtn.status!=='expired'?`
+                            <div style="display:flex;gap:8px;padding:10px 14px 4px;border-top:1px solid #f1f5f9;">
+                                <button onclick="event.stopPropagation();acceptQuotation('${qtn.id}')" style="flex:1;background:#ecfdf5;color:#16a34a;border:none;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✅ Accept</button>
+                                <button onclick="event.stopPropagation();expireQuotation('${qtn.id}')" style="flex:1;background:#fef2f2;color:#dc2626;border:none;border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">❌ Expire</button>
+                            </div>`:''}
+                            ${qtn.status==='accepted'&&!qtn.convertedToInvoiceId?`
+                            <div style="padding:10px 14px 4px;border-top:1px solid #f1f5f9;">
+                                <button onclick="event.stopPropagation();convertQuotationToInvoice('${qtn.id}')" style="width:100%;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;border-radius:9px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">📄 Convert to Invoice</button>
+                            </div>`:''}
                         </div>`;
                     }).join('');
                 }
@@ -6474,27 +6646,21 @@ html {
         function sendReminder(id) {
             const inv = appData.invoices.find(i => i.id === id);
             if (!inv) return;
+            currentDoc = inv;
             const customer = appData.customers.find(c => c.id === inv.customerId);
-            const phone = (customer?.phone || '').replace(/\D/g, '');
-            const paidAmt = typeof getInvoicePaidAmount === 'function' ? getInvoicePaidAmount(id) : 0;
-            const remaining = Math.max(0, (inv.grandTotal || 0) - paidAmt);
-            const diffDays = Math.ceil((new Date(inv.dueDate) - new Date()) / 86400000);
-            const biz = appData.settings?.companyName || 'Fire.net.pk';
-            const dueLine = diffDays < 0
-                ? `%E2%9A%A0%EF%B8%8F *${Math.abs(diffDays)} days OVERDUE* - Please pay immediately.`
-                : diffDays === 0 ? `%E2%9A%A0%EF%B8%8F Payment is due *TODAY*.`
-                : `%F0%9F%93%85 Due in *${diffDays} days* (${formatDate(inv.dueDate)}).`;
-            const msg =
-                `Dear *${customer?.name || 'Customer'}*,%0A%0A` +
-                `Payment reminder from *${biz}*:%0A%0A` +
-                `%F0%9F%93%84 Invoice: *${inv.number || '-'}*%0A` +
-                `%F0%9F%92%B0 Total: *PKR ${formatNumber(inv.grandTotal || 0)}*%0A` +
-                (paidAmt > 0 ? `%E2%9C%85 Paid: *PKR ${formatNumber(paidAmt)}*%0A` : '') +
-                `%E2%9D%97 Balance: *PKR ${formatNumber(remaining)}*%0A` +
-                `${dueLine}%0A%0A` +
-                `Kindly arrange payment at your earliest convenience.%0AThank you %F0%9F%99%8F`;
-            window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
-            showToast('success', 'WhatsApp Opened', `Reminder ready for ${customer?.name || 'client'}`);
+            const cleanPhone = (customer?.phone || '').replace(/\D/g, '');
+
+            const message = `Hello ${customer?.name || 'there'},%0A%0A` +
+                `This is a friendly reminder that your invoice *${inv.number || '-'}* is due.%0A%0A` +
+                `*Amount Due:* PKR ${formatNumber(inv.grandTotal || 0)}%0A` +
+                `*Due Date:* ${formatDate(inv.dueDate)}%0A%0A` +
+                `Please make the payment at your earliest convenience.%0A%0A` +
+                `Thank you,%0A` +
+                `${appData.settings.companyName}`;
+
+            const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${message}` : `https://wa.me/?text=${message}`;
+            window.open(url, '_blank');
+            showToast('info', 'Reminder Sent', 'Opening WhatsApp...');
         }
 
         // ==================== SETTINGS ====================
