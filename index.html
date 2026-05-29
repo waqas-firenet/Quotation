@@ -2116,6 +2116,21 @@ html {
                         <div class="stat-value" id="finUnpaid" style="font-size:18px;color:var(--danger);">PKR 0</div>
                         <div class="stat-label">Outstanding</div>
                     </div>
+                    <div class="stat-card" style="border-left:4px solid #16a34a;">
+                        <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M2 8c1.5 0 3 1 4.5 1S9 8 10.5 8 13 9 14.5 9 17 8 18.5 8 21 9 22 9V4H2v4zM2 16c1.5 0 3 1 4.5 1S9 16 10.5 16 13 17 14.5 17 17 16 18.5 16 21 17 22 17v-5c-1 0-3.5-1-5-1s-3.5 1-5 1-3.5-1-5-1S4 12 2 12v4z"/></svg></div>
+                        <div class="stat-value" id="finCashInHand" style="font-size:18px;color:#16a34a;">PKR 0</div>
+                        <div class="stat-label">💵 Cash in Hand</div>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #0ea5e9;">
+                        <div class="stat-icon blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10"/></svg></div>
+                        <div class="stat-value" id="finBankBalance" style="font-size:18px;color:#0ea5e9;">PKR 0</div>
+                        <div class="stat-label">🏦 Bank / Online</div>
+                    </div>
+                    <div class="stat-card" style="border-left:4px solid #8b5cf6;">
+                        <div class="stat-icon" style="background:#f3e8ff;color:#8b5cf6;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+                        <div class="stat-value" id="finWalletBalance" style="font-size:18px;color:#8b5cf6;">PKR 0</div>
+                        <div class="stat-label">📱 Wallet Balance</div>
+                    </div>
                 </div>
 
                 <!-- Profit Bar -->
@@ -4952,15 +4967,14 @@ html {
             renderAll();
         }
 
-        function createInvoiceFromJob(job, autoReminder) {
+        function createInvoiceFromJob(job) {
             const customer = appData.customers.find(c => c.id === job.customerId);
-            const dueDate = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
             const invoice = {
                 id: 'inv_' + Date.now(),
                 number: generateDocNumber('invoice'),
                 customerId: job.customerId,
                 date: new Date().toISOString().split('T')[0],
-                dueDate: dueDate,
+                dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
                 subject: job.title,
                 items: [{
                     description: job.description || job.title,
@@ -4979,74 +4993,8 @@ html {
                 grandTotal: (job.estimatedCost || 0) * 1.16
             };
             appData.invoices.push(invoice);
-            saveData();
-            showToast('success', '✅ Invoice Created', `Invoice ${invoice.number} created from Job ${job.number}`);
-
-            // Show WhatsApp reminder prompt after short delay
-            setTimeout(() => {
-                showInvoiceReminderPrompt(invoice, customer, job);
-            }, 800);
+            showToast('success', 'Invoice Created', `Invoice ${invoice.number} created from Job ${job.number}`);
         }
-
-        function showInvoiceReminderPrompt(invoice, customer, job) {
-            // Remove any existing prompt
-            const existing = document.getElementById('waReminderPrompt');
-            if (existing) existing.remove();
-
-            const biz = appData.settings?.companyName || 'Fire.net.pk';
-            const phone = (customer?.phone || '').replace(/\D/g, '');
-
-            const overlay = document.createElement('div');
-            overlay.id = 'waReminderPrompt';
-            overlay.style.cssText = `
-                position:fixed; inset:0; background:rgba(0,0,0,0.55);
-                backdrop-filter:blur(4px); z-index:9999;
-                display:flex; align-items:center; justify-content:center; padding:20px;
-            `;
-            overlay.innerHTML = `
-                <div style="background:#fff; border-radius:20px; padding:28px 24px; max-width:380px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.3); text-align:center;">
-                    <div style="width:60px;height:60px;background:#e7faf0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">✅</div>
-                    <h3 style="font-size:17px;font-weight:800;color:#1e293b;margin:0 0 6px;">Job Completed!</h3>
-                    <p style="font-size:13px;color:#64748b;margin:0 0 4px;">Invoice <strong>${invoice.number}</strong> has been created for</p>
-                    <p style="font-size:14px;font-weight:700;color:#1e293b;margin:0 0 6px;">${customer?.name || 'Customer'}</p>
-                    <p style="font-size:13px;color:#64748b;margin:0 0 20px;">Amount: <strong style="color:#0ea5e9;">PKR ${formatNumber(invoice.grandTotal)}</strong> &nbsp;|&nbsp; Due: <strong>${formatDate(invoice.dueDate)}</strong></p>
-                    <p style="font-size:13px;color:#64748b;margin:0 0 20px;">Send a WhatsApp payment reminder to <strong>${customer?.name || 'the client'}</strong> now?</p>
-                    <div style="display:flex;gap:10px;flex-direction:column;">
-                        <button onclick="sendJobInvoiceReminder('${invoice.id}'); document.getElementById('waReminderPrompt').remove();"
-                            style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;">
-                            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:16px;height:16px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg>
-                            Send WhatsApp Reminder
-                        </button>
-                        <button onclick="document.getElementById('waReminderPrompt').remove();"
-                            style="background:#f1f5f9;color:#64748b;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;">
-                            Skip for now
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-        }
-
-        function sendJobInvoiceReminder(invId) {
-            const inv = appData.invoices.find(i => i.id === invId);
-            if (!inv) return;
-            const customer = appData.customers.find(c => c.id === inv.customerId);
-            const phone = (customer?.phone || '').replace(/\D/g, '');
-            const biz = appData.settings?.companyName || 'Fire.net.pk';
-            const msg =
-                `Dear *${customer?.name || 'Customer'}*,%0A%0A` +
-                `Your job has been completed and an invoice has been generated.%0A%0A` +
-                `%F0%9F%93%84 Invoice: *${inv.number}*%0A` +
-                `%F0%9F%92%BC Job: *${inv.subject}*%0A` +
-                `%F0%9F%92%B0 Amount: *PKR ${formatNumber(inv.grandTotal)}*%0A` +
-                `%F0%9F%93%85 Due Date: *${formatDate(inv.dueDate)}*%0A%0A` +
-                `Please arrange payment before the due date.%0A` +
-                `Thank you for choosing *${biz}*! %F0%9F%99%8F`;
-            const url = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
-            window.open(url, '_blank');
-            showToast('success', 'WhatsApp Opened', 'Reminder sent to ' + (customer?.name || 'client'));
-        }
-        window.sendJobInvoiceReminder = sendJobInvoiceReminder;
 
         function editJob(id) {
             const job = appData.jobs.find(j => j.id === id);
@@ -5097,21 +5045,9 @@ html {
         function updateJobProgress(id, progress) {
             const job = appData.jobs.find(j => j.id === id);
             if (!job) return;
-            const wasCompleted = job.status === 'completed';
             job.progress = progress;
-            if (progress === 100) {
-                job.status = 'completed';
-                // Auto-create invoice if enabled and not already done
-                if (job.createInvoice && !wasCompleted) {
-                    // Check if invoice already exists for this job
-                    const exists = appData.invoices.some(inv =>
-                        inv.notes && inv.notes.includes('Job ' + job.number)
-                    );
-                    if (!exists) {
-                        createInvoiceFromJob(job);
-                    }
-                }
-            } else if (progress > 0) job.status = 'in-progress';
+            if (progress === 100) job.status = 'completed';
+            else if (progress > 0) job.status = 'in-progress';
             else job.status = 'pending';
             saveData();
             showToast('success', 'Updated', `Job progress updated to ${progress}%`);
@@ -5486,16 +5422,30 @@ html {
             setColor('finProfit', calc.profit >= 0 ? 'var(--success)' : 'var(--danger)');
             setColor('finMargin', calc.margin >= 0 ? 'var(--success)' : 'var(--danger)');
 
+            const cashInHand = (appData.payments || [])
+                .filter(p => p.method === 'cash')
+                .reduce((s, p) => s + (p.amount || 0), 0);
+            const bankBalance = (appData.payments || [])
+                .filter(p => ['bank','cheque','online'].includes(p.method))
+                .reduce((s, p) => s + (p.amount || 0), 0);
+            const walletBalance = (appData.wallets || [])
+                .reduce((s, w) => s + (parseFloat(w.balance) || 0), 0);
+            set('finCashInHand',    'PKR ' + formatNumber(cashInHand));
+            set('finBankBalance',   'PKR ' + formatNumber(bankBalance));
+            set('finWalletBalance', 'PKR ' + formatNumber(walletBalance));
+
             // Render bar chart
             const barEl = document.getElementById('finBar');
             if (barEl) {
                 const maxVal = Math.max(calc.revenue, calc.cost, 1);
                 const bars = [
-                    { label: 'Revenue', value: calc.revenue, color: 'var(--secondary)' },
-                    { label: 'Cost', value: calc.cost, color: 'var(--warning)' },
-                    { label: 'Profit', value: calc.profit, color: calc.profit >= 0 ? 'var(--success)' : 'var(--danger)' },
+                    { label: 'Revenue',       value: calc.revenue,     color: 'var(--secondary)' },
+                    { label: 'Collected',     value: calc.paid,        color: 'var(--success)' },
+                    { label: 'Outstanding',   value: calc.unpaid,      color: 'var(--danger)' },
+                    { label: 'Net Profit',    value: calc.profit,      color: calc.profit >= 0 ? '#16a34a' : 'var(--danger)' },
+                    { label: 'Cash in Hand',  value: cashInHand,       color: '#16a34a' },
+                    { label: 'Bank / Online', value: bankBalance,      color: '#0ea5e9' },
                     { label: 'Extra Charges', value: calc.extraCharges, color: 'var(--gray)' },
-                    { label: 'Outstanding', value: calc.unpaid, color: 'var(--danger)' },
                 ];
                 barEl.innerHTML = bars.map(b => {
                     const pct = Math.max(0, (Math.abs(b.value) / maxVal) * 100);
@@ -5713,7 +5663,7 @@ html {
                                     <button class="action-btn pdf" onclick="exportSinglePDF('${inv.id}', 'invoice')" title="PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9 13h1.5a1.5 1.5 0 000-3H9v5m4-5h2m-2 2h2"/></svg></i></button>
                                     <button class="action-btn whatsapp" onclick="shareSingleWhatsApp('${inv.id}', 'invoice')" title="WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></i></button>
                                     <button class="action-btn" onclick="deleteInvoice('${inv.id}')" title="Delete" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button>
-                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="sendReminder('${inv.id}')" title="WhatsApp Reminder" style="display:inline-flex;align-items:center;gap:5px;background:#e7faf0;color:#25d366;border:none;border-radius:8px;padding:0 10px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Remind</button>`:''}
+                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="sendReminder('${inv.id}')" title="WhatsApp Reminder" style="display:inline-flex;align-items:center;gap:5px;background:#e7faf0;color:#25d366;border:none;border-radius:8px;padding:0 10px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Remind</button>`:''}
                                 </div>
                             </td>
                         </tr>`;
@@ -5751,7 +5701,7 @@ html {
                                     <div style="font-size: 13px; color: var(--gray); margin-bottom: 4px;">${customer?.name || 'Unknown'}</div>
                                     ${dueBadge ? `<div style="margin-bottom: 4px;">${dueBadge}</div>` : ''}
                                     <div style="font-size: 12px; color: var(--gray);">Due: ${formatDate(inv.dueDate)}</div>
-                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="event.stopPropagation();sendReminder('${inv.id}')" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Send Reminder</button>`:''}
+                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="event.stopPropagation();sendReminder('${inv.id}')" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Send Reminder</button>`:''}
                                     ${paidAmt > 0 ? `<div style="margin-top: 6px; display: flex; gap: 10px;">
                                         <span style="font-size: 12px; color: var(--success); font-weight: 600;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3"/></svg></i> Paid: PKR ${formatNumber(paidAmt)}</span>
                                         ${remaining > 0 ? `<span style="font-size: 12px; color: var(--danger); font-weight: 600;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M5 2h14M5 22h14M17 2v6l-5 4 5 4v6M7 2v6l5 4-5 4v6"/></svg></i> Due: PKR ${formatNumber(remaining)}</span>` : ''}
@@ -6526,15 +6476,14 @@ html {
             if (!inv) return;
             const customer = appData.customers.find(c => c.id === inv.customerId);
             const phone = (customer?.phone || '').replace(/\D/g, '');
-            const paidAmt = getInvoicePaidAmount ? getInvoicePaidAmount(id) : 0;
+            const paidAmt = typeof getInvoicePaidAmount === 'function' ? getInvoicePaidAmount(id) : 0;
             const remaining = Math.max(0, (inv.grandTotal || 0) - paidAmt);
             const diffDays = Math.ceil((new Date(inv.dueDate) - new Date()) / 86400000);
             const biz = appData.settings?.companyName || 'Fire.net.pk';
             const dueLine = diffDays < 0
                 ? `%E2%9A%A0%EF%B8%8F *${Math.abs(diffDays)} days OVERDUE* - Please pay immediately.`
-                : diffDays === 0
-                    ? `%E2%9A%A0%EF%B8%8F Payment is due *TODAY*.`
-                    : `%F0%9F%93%85 Due in *${diffDays} days* (${formatDate(inv.dueDate)}).`;
+                : diffDays === 0 ? `%E2%9A%A0%EF%B8%8F Payment is due *TODAY*.`
+                : `%F0%9F%93%85 Due in *${diffDays} days* (${formatDate(inv.dueDate)}).`;
             const msg =
                 `Dear *${customer?.name || 'Customer'}*,%0A%0A` +
                 `Payment reminder from *${biz}*:%0A%0A` +
@@ -6543,8 +6492,7 @@ html {
                 (paidAmt > 0 ? `%E2%9C%85 Paid: *PKR ${formatNumber(paidAmt)}*%0A` : '') +
                 `%E2%9D%97 Balance: *PKR ${formatNumber(remaining)}*%0A` +
                 `${dueLine}%0A%0A` +
-                `Kindly arrange payment at your earliest convenience.%0A` +
-                `Thank you %F0%9F%99%8F`;
+                `Kindly arrange payment at your earliest convenience.%0AThank you %F0%9F%99%8F`;
             window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
             showToast('success', 'WhatsApp Opened', `Reminder ready for ${customer?.name || 'client'}`);
         }
