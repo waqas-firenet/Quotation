@@ -5633,6 +5633,7 @@ html {
                                     <button class="action-btn pdf" onclick="exportSinglePDF('${inv.id}', 'invoice')" title="PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9 13h1.5a1.5 1.5 0 000-3H9v5m4-5h2m-2 2h2"/></svg></i></button>
                                     <button class="action-btn whatsapp" onclick="shareSingleWhatsApp('${inv.id}', 'invoice')" title="WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></i></button>
                                     <button class="action-btn" onclick="deleteInvoice('${inv.id}')" title="Delete" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button>
+                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="sendReminder('${inv.id}')" style="display:inline-flex;align-items:center;gap:5px;background:#e7faf0;color:#25d366;border:none;border-radius:8px;padding:0 10px;height:34px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Remind</button>`:''}
                                 </div>
                             </td>
                         </tr>`;
@@ -5670,6 +5671,7 @@ html {
                                     <div style="font-size: 13px; color: var(--gray); margin-bottom: 4px;">${customer?.name || 'Unknown'}</div>
                                     ${dueBadge ? `<div style="margin-bottom: 4px;">${dueBadge}</div>` : ''}
                                     <div style="font-size: 12px; color: var(--gray);">Due: ${formatDate(inv.dueDate)}</div>
+                                    ${(inv.status==='pending'||inv.status==='overdue')?`<button onclick="event.stopPropagation();sendReminder('${inv.id}')" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:#25d366;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' style='width:13px;height:13px;flex-shrink:0;'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z'/></svg> Send Reminder</button>`:''}
                                     ${paidAmt > 0 ? `<div style="margin-top: 6px; display: flex; gap: 10px;">
                                         <span style="font-size: 12px; color: var(--success); font-weight: 600;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3"/></svg></i> Paid: PKR ${formatNumber(paidAmt)}</span>
                                         ${remaining > 0 ? `<span style="font-size: 12px; color: var(--danger); font-weight: 600;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M5 2h14M5 22h14M17 2v6l-5 4 5 4v6M7 2v6l5 4-5 4v6"/></svg></i> Due: PKR ${formatNumber(remaining)}</span>` : ''}
@@ -6442,21 +6444,26 @@ html {
         function sendReminder(id) {
             const inv = appData.invoices.find(i => i.id === id);
             if (!inv) return;
-            currentDoc = inv;
             const customer = appData.customers.find(c => c.id === inv.customerId);
             const cleanPhone = (customer?.phone || '').replace(/\D/g, '');
-
-            const message = `Hello ${customer?.name || 'there'},%0A%0A` +
-                `This is a friendly reminder that your invoice *${inv.number || '-'}* is due.%0A%0A` +
-                `*Amount Due:* PKR ${formatNumber(inv.grandTotal || 0)}%0A` +
-                `*Due Date:* ${formatDate(inv.dueDate)}%0A%0A` +
-                `Please make the payment at your earliest convenience.%0A%0A` +
-                `Thank you,%0A` +
-                `${appData.settings.companyName}`;
-
-            const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${message}` : `https://wa.me/?text=${message}`;
-            window.open(url, '_blank');
-            showToast('info', 'Reminder Sent', 'Opening WhatsApp...');
+            const paidAmt = getInvoicePaidAmount(id);
+            const remaining = Math.max(0, (inv.grandTotal || 0) - paidAmt);
+            const diffDays = Math.ceil((new Date(inv.dueDate) - new Date()) / 86400000);
+            const biz = appData.settings?.companyName || 'Fire.net.pk';
+            const dueLine = diffDays < 0
+                ? `%E2%9A%A0%EF%B8%8F This invoice is *${Math.abs(diffDays)} days OVERDUE*.`
+                : diffDays === 0 ? `%E2%9A%A0%EF%B8%8F Due *TODAY*.`
+                : `%F0%9F%93%85 Due in *${diffDays} days* (${formatDate(inv.dueDate)}).`;
+            const msg =
+                `Dear *${customer?.name || 'Customer'}*,%0A%0A` +
+                `Payment reminder from *${biz}*:%0A%0A` +
+                `%F0%9F%93%84 Invoice: *${inv.number || '-'}*%0A` +
+                `%F0%9F%92%B0 Total: *PKR ${formatNumber(inv.grandTotal || 0)}*%0A` +
+                (paidAmt > 0 ? `%E2%9C%85 Paid: *PKR ${formatNumber(paidAmt)}*%0A` : '') +
+                `%E2%9D%97 Balance: *PKR ${formatNumber(remaining)}*%0A` +
+                `${dueLine}%0A%0APlease pay at your earliest.%0AThank you %F0%9F%99%8F`;
+            window.open(cleanPhone ? `https://wa.me/${cleanPhone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
+            showToast('success', 'WhatsApp Opened', `Reminder ready for ${customer?.name || 'customer'}`);
         }
 
         // ==================== SETTINGS ====================
