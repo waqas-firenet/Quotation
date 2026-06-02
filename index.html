@@ -1027,7 +1027,9 @@ html {
             width: 92%;
             max-width: 700px;
             max-height: 88vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             -webkit-overflow-scrolling: touch;
             transform: translateY(20px) scale(0.96);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1043,6 +1045,7 @@ html {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
             position: sticky;
             top: 0;
             background: white;
@@ -1067,17 +1070,15 @@ html {
         }
         .modal-close:active { background: var(--danger); color: white; transform: scale(0.9); }
 
-        .modal-body { padding: 20px; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1 1 auto; -webkit-overflow-scrolling: touch; }
 
         .modal-footer {
             padding: 16px 20px;
             border-top: 1px solid #f1f5f9;
             display: flex;
             gap: 10px;
-            position: sticky;
-            bottom: 0;
             background: white;
-            z-index: 10;
+            flex-shrink: 0;
         }
 
         @media (max-width: 767px) {
@@ -1674,12 +1675,75 @@ html {
             .quick-actions { gap: 18px; }
         }
 
-        /* Print styles */
+        /* Print styles — isolate only the invoice preview (#printArea).
+           When the browser's native Print / Save as PDF is used, everything
+           except the invoice is hidden so the rest of the app (nav, menus,
+           modals) does not bleed onto the printed pages, and the invoice
+           prints on a single page starting at the very top. */
         @media print {
-            .mobile-header, .mobile-nav, .fab, .no-print { display: none !important; }
-            .main-content { margin-left: 0; padding: 0; }
-            .preview-container { box-shadow: none; max-width: 100%; border-radius: 0; }
-            .sidebar { display: none !important; }
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                background: #fff !important;
+            }
+
+            /* Hide everything by default */
+            body * { visibility: hidden !important; }
+
+            /* Show the invoice preview and all of its contents */
+            #printArea, #printArea * { visibility: visible !important; }
+
+            /* The invoice flows normally at the top of the page.
+               A slight scale ensures it fits one A4 page. */
+            #printArea {
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 12px !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background: #fff !important;
+                transform: scale(0.92) !important;
+                transform-origin: top center !important;
+            }
+
+            /* Collapse the modal wrappers so they take no space and don't
+               reserve a screen-height page above the invoice. */
+            #previewModal, #previewModalInner, #previewContent {
+                position: static !important;
+                display: block !important;
+                visibility: visible !important;
+                overflow: visible !important;
+                background: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: auto !important;
+                max-width: none !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                box-shadow: none !important;
+                inset: auto !important;
+                transform: none !important;
+                align-items: flex-start !important;
+            }
+
+            /* Remove app layout spacing entirely */
+            .app-container, .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                min-height: 0 !important;
+                height: auto !important;
+            }
+
+            /* Hide chrome explicitly */
+            .mobile-header, .mobile-nav, .fab, .no-print, .sidebar,
+            .modal-header, .modal-footer, .bottom-sheet, .bottom-sheet-overlay { display: none !important; }
+
+            @page { size: A4; margin: 8mm; }
         }
 
         /* Mobile-only class */
@@ -1833,6 +1897,10 @@ html {
             <div class="portal-section" id="portalQuotesSection">
                 <div class="portal-section-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8 17h8M8 13h8M8 9h5"/></svg> Quotations</div>
                 <div id="portalQuotesList"></div>
+            </div>
+            <div class="portal-section" id="portalPaymentsSection">
+                <div class="portal-section-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M21 4H3a2 2 0 00-2 2v12a2 2 0 002 2h18a2 2 0 002-2V6a2 2 0 00-2-2zM1 10h22M16 14h2v2h-2z"/></svg> Payment History</div>
+                <div id="portalPaymentsList"></div>
             </div>
             <div class="portal-section" id="portalJobsSection">
                 <div class="portal-section-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/></svg> Active Jobs</div>
@@ -2552,8 +2620,12 @@ html {
 <div class="settings-card">
                         <h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8 17h8v-2H8v2zm0-4h8v-2H8v2zm0-4h5V7H8v2z"/></svg></i> Default Terms</h3>
                         <div class="form-group" style="margin-bottom: 14px;">
-                            <label class="form-label">Payment Terms</label>
-                            <textarea class="form-textarea" id="settingTerms" rows="3">Payment is due within 14 days from the invoice date. Late payments may incur a 2% monthly service charge. Please make payment via bank transfer or cash.</textarea>
+                            <label class="form-label">Invoice Terms & Conditions</label>
+                            <textarea class="form-textarea" id="settingInvoiceTerms" rows="3">Payment is due within 14 days from the invoice date. Late payments may incur a 2% monthly service charge. Please make payment via bank transfer or cash.</textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 14px;">
+                            <label class="form-label">Quotation Terms & Conditions</label>
+                            <textarea class="form-textarea" id="settingQuotationTerms" rows="3">This quotation is valid for 30 days from the date of issue. Prices are subject to change after the validity period. 50% advance may be required to confirm the order.</textarea>
                         </div>
                         <div class="form-group" style="margin-bottom: 14px;">
                             <label class="form-label">Default Notes</label>
@@ -3504,6 +3576,9 @@ html {
                     <button class="btn btn-ghost btn-block" onclick="importDataPrompt()" style="margin-bottom: 8px;">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></i> Import Data (JSON)
                     </button>
+                    <button class="btn btn-ghost btn-block" onclick="showLocalBackups()" style="margin-bottom: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-9 9zM12 7v5l3 3"/></svg></i> Restore Local Backup
+                    </button>
                     <button class="btn btn-danger btn-block" onclick="clearAllData()">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></i> Clear All Data
                     </button>
@@ -3564,6 +3639,8 @@ html {
                 primaryColor: '#dc2626',
                 secondaryColor: '#2563eb',
                 terms: 'Payment is due within 14 days from the invoice date. Late payments may incur a 2% monthly service charge.',
+                invoiceTerms: 'Payment is due within 14 days from the invoice date. Late payments may incur a 2% monthly service charge. Please make payment via bank transfer or cash.',
+                quotationTerms: 'This quotation is valid for 30 days from the date of issue. Prices are subject to change after the validity period. 50% advance may be required to confirm the order.',
                 notes: 'Thank you for your business! For any queries, please contact us at info@fire.net.pk'
             },
             profile: {
@@ -3583,6 +3660,27 @@ html {
 
         let currentSession = null; // { type: 'admin' } or { type: 'customer', customerId: '...' }
         let autoLogoutTimer = null;
+
+        // ---- Session persistence ----
+        // Keeps the user logged in across page refreshes. We use sessionStorage
+        // so the session survives a refresh but clears when the browser/tab is
+        // fully closed — a sensible balance for an app with financial data.
+        const SESSION_KEY = 'firenet_session';
+        function saveSession() {
+            try {
+                if (currentSession) sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+                else sessionStorage.removeItem(SESSION_KEY);
+            } catch(e) {}
+        }
+        function getSavedSession() {
+            try {
+                const raw = sessionStorage.getItem(SESSION_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch(e) { return null; }
+        }
+        function clearSession() {
+            try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
+        }
 
         let currentDoc = null;
         let currentFilter = { invoices: 'all', quotations: 'all', payments: 'all' };
@@ -3617,8 +3715,23 @@ html {
             const usernameInput = document.getElementById('adminUsername');
             if (usernameInput) usernameInput.value = appData.auth?.adminUsername || 'admin';
 
-            // Show login screen — app content hidden until authenticated
-            showLoginScreen();
+            // Restore a saved session if one exists, otherwise show login.
+            const savedSession = getSavedSession();
+            if (savedSession && savedSession.type === 'admin') {
+                currentSession = savedSession;
+                hideLoginScreen();
+                renderAll();
+                updateFabVisibility();
+                startAutoLogout();
+            } else if (savedSession && savedSession.type === 'customer'
+                       && appData.customers.some(c => c.id === savedSession.customerId)) {
+                currentSession = savedSession;
+                document.getElementById('loginScreen').classList.add('hidden');
+                showCustomerPortal(savedSession.customerId);
+            } else {
+                // No valid session — show login screen.
+                showLoginScreen();
+            }
 
             // Init Firebase if config saved, else show setup prompt if not skipped
             const fbConfig = getSavedFirebaseConfig();
@@ -3667,6 +3780,7 @@ html {
             if (username === storedUser && btoa(password) === storedHash) {
                 errEl.classList.remove('show');
                 currentSession = { type: 'admin' };
+                saveSession();
                 hideLoginScreen();
                 renderAll();
                 updateFabVisibility();
@@ -3697,12 +3811,14 @@ html {
 
             errEl.classList.remove('show');
             currentSession = { type: 'customer', customerId: customer.id };
+            saveSession();
             document.getElementById('loginScreen').classList.add('hidden');
             showCustomerPortal(customer.id);
         }
 
         function adminLogout() {
             currentSession = null;
+            clearSession();
             if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
             document.getElementById('adminPassword').value = '';
             showLoginScreen();
@@ -3710,6 +3826,7 @@ html {
 
         function customerLogout() {
             currentSession = null;
+            clearSession();
             document.getElementById('customerPin').value = '';
             document.getElementById('customerIdentifier').value = '';
             document.getElementById('customerPortalScreen').classList.remove('active');
@@ -3856,6 +3973,15 @@ html {
                                         ${paid>0?`<div style="color:#16a34a;font-weight:600;">Paid</div><div style="text-align:right;color:#16a34a;font-weight:600;">PKR ${_pFmt(paid)}</div>`:''}
                                         ${bal>0?`<div style="font-weight:800;color:#ef4444;">Balance Due</div><div style="font-weight:800;color:#ef4444;text-align:right;">PKR ${_pFmt(bal)}</div>`:''}
                                     </div>
+                                    ${(() => {
+                                        const ip = (appData.payments||[]).filter(p => p.invoiceId === inv.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+                                        if (!ip.length) return '';
+                                        const ml = { bank:'Bank Transfer', cash:'Cash', cheque:'Cheque', online:'Online', easypaisa:'EasyPaisa', jazzcash:'JazzCash', card:'Card', other:'Other' };
+                                        return `<div style="margin-top:10px;font-size:11px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px;">
+                                            <div style="font-weight:700;color:#334155;margin-bottom:6px;">Payments received</div>
+                                            ${ip.map(p => `<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;"><span>${_pDate(p.date)}${p.method?' · '+(ml[p.method]||p.method):''}</span><span style="color:#16a34a;font-weight:600;">PKR ${_pFmt(p.amount||0)}</span></div>`).join('')}
+                                        </div>`;
+                                    })()}
                                     ${isPending ? _portalPaymentBlock() : ''}
                                     ${isPending&&bal>0 ? _portalWaBtn(inv,bal,'invoice') : ''}
                                 </div>
@@ -3928,6 +4054,33 @@ html {
                                         <span style="font-size:12px;font-weight:800;color:var(--primary);">${j.progress||0}%</span>
                                     </div>
                                 </div>
+                            </div>`;
+                        }).join('');
+                    }
+                }
+
+                // ── PAYMENT HISTORY ───────────────────────────────────────
+                const payList = document.getElementById('portalPaymentsList');
+                if (payList) {
+                    const invIds = new Set(invoices.map(i => i.id));
+                    const custPayments = (appData.payments || [])
+                        .filter(p => invIds.has(p.invoiceId))
+                        .sort((a, b) => new Date(b.date) - new Date(a.date)); // newest first
+                    const methodLabels = { bank:'Bank Transfer', cash:'Cash', cheque:'Cheque', online:'Online', easypaisa:'EasyPaisa', jazzcash:'JazzCash', card:'Card', other:'Other' };
+
+                    if (!custPayments.length) {
+                        payList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray);font-size:13px;">No payments recorded yet</div>';
+                    } else {
+                        payList.innerHTML = custPayments.map(p => {
+                            const inv = invoices.find(i => i.id === p.invoiceId);
+                            const ml = methodLabels[p.method] || p.method || '';
+                            return `<div class="portal-invoice-row">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-weight:800;font-size:15px;color:var(--success);">PKR ${_pFmt(p.amount||0)}</div>
+                                    <div style="font-size:12px;color:#64748b;">${_pDate(p.date)}${ml ? ' · ' + ml : ''}</div>
+                                    <div style="font-size:11px;color:#94a3b8;">For ${inv ? inv.number : 'invoice'}${(p.chequeNumber||p.onlineRef) ? ' · Ref: ' + (p.chequeNumber||p.onlineRef) : ''}</div>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;flex-shrink:0;" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3"/></svg>
                             </div>`;
                         }).join('');
                     }
@@ -4100,7 +4253,10 @@ html {
             setVal('settingPhone', s.phone);
             setVal('settingEmail', s.email);
             setVal('settingWebsite', s.website);
-            setVal('settingTerms', s.terms);
+            // Invoice/Quotation terms — fall back to the old single `terms` value
+            // for data saved before terms were split.
+            setVal('settingInvoiceTerms', s.invoiceTerms !== undefined ? s.invoiceTerms : s.terms);
+            setVal('settingQuotationTerms', s.quotationTerms !== undefined ? s.quotationTerms : s.terms);
             setVal('settingNotes', s.notes);
             setVal('settingAppName', s.appName);
             setVal('settingAppTagline', s.appTagline);
@@ -4142,6 +4298,12 @@ html {
         let fbApp = null;
         let syncUnsubscribe = null;
         let saveDebounceTimer = null;
+        // True only after the initial cloud read finishes. While false we must
+        // NOT push local/seed data to Firestore, or we would overwrite real
+        // cloud data with this device's starting state (the "wipe" bug).
+        let cloudLoadComplete = false;
+        // True when a Firebase config exists and we intend to use the cloud.
+        let cloudEnabled = false;
         const FB_DOC_PATH = 'firenet/appdata';
 
         function getSavedFirebaseConfig() {
@@ -4268,6 +4430,8 @@ html {
 
         async function initFirebase(config) {
             try {
+                cloudEnabled = true;
+                cloudLoadComplete = false;
                 // Delete existing app if any
                 if (fbApp) { try { await fbApp.delete(); } catch(e){} }
                 fbApp = firebase.initializeApp(config, 'firenet-' + Date.now());
@@ -4282,12 +4446,14 @@ html {
                 if (doc.exists) {
                     const remote = doc.data();
                     mergeRemoteData(remote);
+                    cloudLoadComplete = true;   // cloud is now the source of truth
                     applySettingsToDOM();
                     renderAll();
                     setSyncStatus('online', 'Synced ✓');
                     showToast('success', 'Firebase Connected', 'Data loaded from cloud!');
                 } else {
-                    // First time — push local data to Firestore
+                    // No cloud doc exists yet — safe to seed it with local data.
+                    cloudLoadComplete = true;
                     await pushToFirestore();
                     setSyncStatus('online', 'Synced ✓');
                     showToast('success', 'Firebase Connected', 'Local data saved to cloud!');
@@ -4302,6 +4468,9 @@ html {
                 setSyncStatus('error', 'Sync Error');
                 showToast('error', 'Firebase Error', err.message || 'Connection failed. Check your config.');
                 db = null;
+                // Do NOT mark load complete on failure — prevents overwriting
+                // cloud data we never managed to read.
+                cloudLoadComplete = false;
             }
         }
 
@@ -4349,6 +4518,13 @@ html {
 
         async function pushToFirestore() {
             if (!db) return;
+            // Safety: never overwrite the cloud document until we have finished
+            // reading it at least once. Otherwise this device's starting/seed
+            // data could wipe real cloud data during the connection window.
+            if (cloudEnabled && !cloudLoadComplete) {
+                console.warn('Skipped cloud push: initial load not complete yet.');
+                return;
+            }
             try {
                 appData._lastSaved = Date.now();
                 await db.collection('firenet').doc('appdata').set(JSON.parse(JSON.stringify(appData)));
@@ -4361,10 +4537,22 @@ html {
 
         function saveData() {
             // Always save locally first (instant, offline fallback)
-            localStorage.setItem('firenet_data', JSON.stringify(appData));
+            const snapshot = JSON.stringify(appData);
+            localStorage.setItem('firenet_data', snapshot);
+
+            // Keep a small rolling history of the last few good local snapshots,
+            // so accidental loss/overwrite can be recovered even without the cloud.
+            try { keepLocalBackup(snapshot); } catch(e) {}
 
             if (!db) {
                 setSyncStatus('local', 'Local Only');
+                return;
+            }
+
+            // If the cloud hasn't finished its initial load, only keep the local
+            // copy for now. Pushing here would risk overwriting real cloud data.
+            if (cloudEnabled && !cloudLoadComplete) {
+                setSyncStatus('saving', 'Loading cloud…');
                 return;
             }
 
@@ -4380,6 +4568,36 @@ html {
                     showToast('warning', 'Sync Failed', 'Saved locally. Will retry when online.');
                 }
             }, 800);
+        }
+
+        // ---- Rolling local backups (device-side safety net) ----
+        // Stores up to MAX_BACKUPS recent snapshots, but only when the data is
+        // non-trivial, so an accidental empty/seed state can't push out the
+        // good backups. These live in localStorage on this device.
+        const MAX_LOCAL_BACKUPS = 8;
+        function keepLocalBackup(snapshot) {
+            const data = JSON.parse(snapshot);
+            const count = (data.invoices?.length || 0) + (data.customers?.length || 0)
+                + (data.quotations?.length || 0) + (data.payments?.length || 0);
+            // Skip backing up an essentially-empty state.
+            if (count === 0) return;
+
+            let list = [];
+            try { list = JSON.parse(localStorage.getItem('firenet_backups') || '[]'); } catch(e) { list = []; }
+
+            // Avoid duplicate consecutive snapshots.
+            if (list.length && list[list.length - 1].snapshot === snapshot) return;
+
+            list.push({ ts: Date.now(), snapshot });
+            while (list.length > MAX_LOCAL_BACKUPS) list.shift();
+
+            try {
+                localStorage.setItem('firenet_backups', JSON.stringify(list));
+            } catch(e) {
+                // If storage is full, drop the oldest and retry once.
+                list.shift();
+                try { localStorage.setItem('firenet_backups', JSON.stringify(list)); } catch(e2) {}
+            }
         }
 
         function initColorPickers() {
@@ -4467,12 +4685,22 @@ html {
             document.getElementById('docNumber').value = generateDocNumber(type);
             document.getElementById('docCustomer').value = '';
             document.getElementById('docSubject').value = '';
-            document.getElementById('docTerms').value = appData.settings.terms;
+            document.getElementById('docTerms').value = (type === 'invoice')
+                ? (appData.settings.invoiceTerms !== undefined ? appData.settings.invoiceTerms : (appData.settings.terms || ''))
+                : (appData.settings.quotationTerms !== undefined ? appData.settings.quotationTerms : (appData.settings.terms || ''));
             document.getElementById('docNotes').value = appData.settings.notes;
             document.getElementById('customerDetailsBox').innerHTML = 'Select a customer to see details...';
 
             const container = document.getElementById('itemsContainer');
             container.innerHTML = '';
+            // Clear extra charges and reset the global discount so values from a
+            // previously opened document don't carry over into this new one.
+            const extraContainer = document.getElementById('extraChargesContainer');
+            if (extraContainer) extraContainer.innerHTML = '';
+            const gdv = document.getElementById('globalDiscountValue');
+            const gdt = document.getElementById('globalDiscountType');
+            if (gdv) gdv.value = 0;
+            if (gdt) gdt.value = 'pct';
             addItemRow();
             calculateTotals();
             populateCustomerSelect();
@@ -4577,8 +4805,44 @@ html {
         function generateDocNumber(type) {
             const prefix = type === 'invoice' ? 'INV' : 'QTN';
             const list = type === 'invoice' ? appData.invoices : appData.quotations;
-            const num = list.length + 1;
-            return `${prefix}-${String(num).padStart(3, '0')}`;
+
+            // Next number = highest existing numeric suffix + 1, so deleting a
+            // document never reuses a number. Pure read — no state mutation here;
+            // final uniqueness is enforced again at save time.
+            let maxNum = 0;
+            list.forEach(d => {
+                const m = String(d.number || '').match(/(\d+)\s*$/);
+                if (m) {
+                    const n = parseInt(m[1], 10);
+                    if (n > maxNum) maxNum = n;
+                }
+            });
+            return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+        }
+
+        // Guarantee a document number is unique within its list. If the number
+        // is blank or already taken by a DIFFERENT document, bump to the next
+        // free one. excludeId lets an edited doc keep its own number.
+        function ensureUniqueDocNumber(type, number, excludeId) {
+            const prefix = type === 'invoice' ? 'INV' : 'QTN';
+            const list = type === 'invoice' ? appData.invoices : appData.quotations;
+
+            const taken = id => list.some(d => d.id !== excludeId && (d.number || '') === id);
+
+            if (number && !taken(number)) return number;
+
+            // Compute the next free sequential number.
+            let maxNum = 0;
+            list.forEach(d => {
+                const m = String(d.number || '').match(/(\d+)\s*$/);
+                if (m) { const n = parseInt(m[1], 10); if (n > maxNum) maxNum = n; }
+            });
+            let candidate;
+            do {
+                maxNum++;
+                candidate = `${prefix}-${String(maxNum).padStart(3, '0')}`;
+            } while (taken(candidate));
+            return candidate;
         }
 
         function populateCustomerSelect() {
@@ -4787,11 +5051,19 @@ html {
 
             if (items.some(i => !i.description)) { showToast('error', 'Error', 'Please fill all item descriptions'); return; }
 
+            const docId = document.getElementById('docId').value || Date.now().toString();
+
+            // Look up the existing record (if editing) so we can preserve
+            // creation time and payment-derived status instead of resetting it.
+            const existing = type === 'invoice'
+                ? appData.invoices.find(i => i.id === docId)
+                : appData.quotations.find(q => q.id === docId);
+
             let docStatus = status === 'draft' ? 'draft' : (type === 'invoice' ? 'pending' : 'sent');
 
             const doc = {
-                id: document.getElementById('docId').value || Date.now().toString(),
-                number: document.getElementById('docNumber').value,
+                id: docId,
+                number: ensureUniqueDocNumber(type, document.getElementById('docNumber').value, docId),
                 customerId: customerId,
                 date: document.getElementById('docDate').value,
                 dueDate: document.getElementById('docDueDate').value,
@@ -4801,7 +5073,7 @@ html {
                 terms: document.getElementById('docTerms').value,
                 notes: document.getElementById('docNotes').value,
                 status: docStatus,
-                createdAt: new Date().toISOString()
+                createdAt: (existing && existing.createdAt) ? existing.createdAt : new Date().toISOString()
             };
 
             const gType = document.getElementById('globalDiscountType')?.value || 'pct';
@@ -4836,6 +5108,21 @@ html {
             doc.extraCharges        = extraCharges;
             doc.totalExtraCharges   = totalExtraCharges;
             doc.grandTotal          = subtotal - totalDiscount + totalTax + totalExtraCharges;
+
+            // For invoices (not drafts), derive status from actual payments so
+            // editing a paid/partially-paid invoice doesn't wipe its status.
+            if (type === 'invoice' && status !== 'draft') {
+                const paidAmt = getInvoicePaidAmount(doc.id);
+                if (paidAmt >= doc.grandTotal && doc.grandTotal > 0) {
+                    doc.status = 'paid';
+                } else if (paidAmt > 0) {
+                    doc.status = 'pending';
+                } else {
+                    // No payments — keep overdue if past due date, else pending.
+                    const due = doc.dueDate ? new Date(doc.dueDate) : null;
+                    doc.status = (due && due < new Date()) ? 'overdue' : 'pending';
+                }
+            }
 
             if (type === 'invoice') {
                 const idx = appData.invoices.findIndex(i => i.id === doc.id);
@@ -5066,7 +5353,7 @@ html {
             const customer = appData.customers.find(c => c.id === job.customerId);
             const invoice = {
                 id: 'inv_' + Date.now(),
-                number: generateDocNumber('invoice'),
+                number: ensureUniqueDocNumber('invoice', generateDocNumber('invoice'), null),
                 customerId: job.customerId,
                 date: new Date().toISOString().split('T')[0],
                 dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
@@ -5078,7 +5365,7 @@ html {
                     discount: 0,
                     tax: 16
                 }],
-                terms: appData.settings.terms,
+                terms: (appData.settings.invoiceTerms !== undefined ? appData.settings.invoiceTerms : (appData.settings.terms || '')),
                 notes: `Auto-generated from Job ${job.number}. ${job.notes || ''}`,
                 status: 'pending',
                 createdAt: new Date().toISOString(),
@@ -5424,11 +5711,13 @@ html {
         // ==================== RENDERING ====================
         function renderStats() {
             const invoices = appData.invoices;
-            const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + (i.grandTotal || 0), 0);
             const activeJobs = appData.jobs.filter(j => j.status !== 'completed' && j.status !== 'cancelled').length;
 
-            // Finance calculations
+            // Finance calculations (drafts/cancelled excluded inside)
             const finCalc = calcFinanceStats(invoices);
+            // Total Revenue on the dashboard = money actually received,
+            // so it stays consistent with partial payments and the finance view.
+            const totalRevenue = finCalc.paid;
 
             const statInv = document.getElementById('statTotalInvoices');
             const statRev = document.getElementById('statTotalRevenue');
@@ -5459,6 +5748,10 @@ html {
         function calcFinanceStats(invoices) {
             let revenue = 0, cost = 0, extraCharges = 0, paid = 0, unpaid = 0;
             invoices.forEach(inv => {
+                // Drafts and cancelled invoices are not real receivables —
+                // exclude them from all financial totals.
+                if (inv.status === 'draft' || inv.status === 'cancelled') return;
+
                 const invRevenue = inv.grandTotal || 0;
                 revenue += invRevenue;
                 extraCharges += inv.totalExtraCharges || 0;
@@ -5850,15 +6143,16 @@ html {
             if(!q) return;
             if(appData.invoices.some(i=>i.fromQuotationId===id)){showToast('warning','Already Converted','Already converted to invoice');return;}
             const invoice={
-                id:'inv_'+Date.now(), number:generateDocNumber('invoice'),
+                id:'inv_'+Date.now(), number:ensureUniqueDocNumber('invoice', generateDocNumber('invoice'), null),
                 customerId:q.customerId,
                 date:new Date().toISOString().split('T')[0],
                 dueDate:new Date(Date.now()+14*86400000).toISOString().split('T')[0],
                 subject:q.subject||q.number,
                 items:JSON.parse(JSON.stringify(q.items||[])),
-                terms:q.terms||appData.settings.terms, notes:q.notes||'',
+                terms:(appData.settings.invoiceTerms !== undefined ? appData.settings.invoiceTerms : (appData.settings.terms || '')), notes:q.notes||'',
                 status:'pending', fromQuotationId:id,
                 globalDiscountType:q.globalDiscountType, globalDiscountValue:q.globalDiscountValue,
+                globalDiscountAmt:q.globalDiscountAmt, totalItemDiscount:q.totalItemDiscount,
                 extraCharges:JSON.parse(JSON.stringify(q.extraCharges||[])),
                 subtotal:q.subtotal, totalDiscount:q.totalDiscount,
                 totalTax:q.totalTax, totalExtraCharges:q.totalExtraCharges,
@@ -5990,7 +6284,9 @@ html {
             grid.innerHTML = customers.map(c => {
                 const initials = (c.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 const customerInvoices = appData.invoices.filter(i => i.customerId === c.id);
-                const balance = customerInvoices.filter(i => i.status === 'pending' || i.status === 'overdue').reduce((sum, i) => sum + (i.grandTotal || 0), 0);
+                const balance = customerInvoices
+                    .filter(i => i.status === 'pending' || i.status === 'overdue')
+                    .reduce((sum, i) => sum + Math.max(0, (i.grandTotal || 0) - getInvoicePaidAmount(i.id)), 0);
 
                 return `<div class="customer-card" onclick="editCustomer('${c.id}')">
                     <div class="customer-avatar">${initials}</div>
@@ -6194,6 +6490,15 @@ html {
             if (navJob) navJob.textContent = jobCount;
             if (navCust) navCust.textContent = custCount;
 
+            // Mobile bottom-nav badges (these were not being updated, so they
+            // always showed 0).
+            const mobInv = document.getElementById('mobInvoiceCount');
+            const mobJob = document.getElementById('mobJobCount');
+            const mobCust = document.getElementById('mobCustomerCount');
+            if (mobInv) mobInv.textContent = invCount;
+            if (mobJob) mobJob.textContent = jobCount;
+            if (mobCust) mobCust.textContent = custCount;
+
             const navWallet = document.getElementById('navWalletCount');
             if (navWallet) navWallet.textContent = appData.wallets ? appData.wallets.length : 0;
 
@@ -6310,6 +6615,14 @@ html {
             const gdVal  = document.getElementById('globalDiscountValue');
             if (gdType) gdType.value = doc.globalDiscountType || 'pct';
             if (gdVal)  gdVal.value  = doc.globalDiscountValue || 0;
+
+            // Clear and repopulate extra charges from THIS document only, so
+            // charges from a previously opened document don't carry over.
+            const extraContainer = document.getElementById('extraChargesContainer');
+            if (extraContainer) {
+                extraContainer.innerHTML = '';
+                (doc.extraCharges || []).forEach(c => addExtraCharge(c.label, c.amount));
+            }
 
             calculateTotals();
             document.getElementById('createModal').classList.add('active');
@@ -6435,6 +6748,29 @@ html {
                             <div class="preview-total-row"><span>Tax</span><span>PKR ${formatNumber(doc.totalTax || 0)}</span></div>
                             ${(doc.extraCharges || []).map(c => `<div class="preview-total-row"><span>${c.label}</span><span>PKR ${formatNumber(c.amount)}</span></div>`).join('')}
                             <div class="preview-total-row grand"><span>Grand Total</span><span>PKR ${formatNumber(doc.grandTotal || 0)}</span></div>
+                            ${(() => {
+                                if (type !== 'invoice') return '';
+                                const invPayments = (appData.payments || [])
+                                    .filter(p => p.invoiceId === doc.id)
+                                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                                if (invPayments.length === 0) return '';
+                                const paidAmt = invPayments.reduce((s, p) => s + (p.amount || 0), 0);
+                                const balanceDue = Math.max(0, (doc.grandTotal || 0) - paidAmt);
+                                const methodLabels = { cash:'Cash', bank:'Bank Transfer', cheque:'Cheque', card:'Card', online:'Online', easypaisa:'EasyPaisa', jazzcash:'JazzCash', other:'Other' };
+
+                                // One row per payment, with its own date and method.
+                                const rows = invPayments.map(p => {
+                                    const ml = methodLabels[p.method] || p.method || '';
+                                    return `<div class="preview-total-row"><span style="font-size:12px;">Paid · ${formatDate(p.date)}${ml ? ' (' + ml + ')' : ''}</span><span style="color:var(--success);">-PKR ${formatNumber(p.amount || 0)}</span></div>`;
+                                }).join('');
+
+                                const totalPaidRow = invPayments.length > 1
+                                    ? `<div class="preview-total-row"><span>Total Paid</span><span style="color:var(--success);">-PKR ${formatNumber(paidAmt)}</span></div>`
+                                    : '';
+
+                                return rows + totalPaidRow +
+                                    `<div class="preview-total-row grand" style="color:${balanceDue > 0 ? 'var(--danger)' : 'var(--success)'};"><span>Balance Due</span><span>PKR ${formatNumber(balanceDue)}</span></div>`;
+                            })()}
                         </div>
                     </div>
 
@@ -6456,6 +6792,104 @@ html {
         }
 
         // ==================== EXPORT & SHARE ====================
+        // Build a PDF filename based on the document's customer name.
+        // Falls back to the document number, then 'document'.
+        function buildPdfFilename(doc) {
+            const customer = appData.customers.find(c => c.id === doc.customerId);
+            let base = (customer && customer.name) ? customer.name : (doc.number || 'document');
+            // Strip characters not safe for filenames.
+            base = base.replace(/[\\/:*?"<>|]+/g, '').trim() || 'document';
+            return `${base}.pdf`;
+        }
+
+        // Render a DOM element into a properly paginated A4 PDF.
+        // Forces a fixed A4-proportion width before capture so the layout
+        // is consistent regardless of the on-screen window size, then slices
+        // the rendered canvas into A4 pages so content isn't cut mid-line.
+        async function renderElementToPdf(element) {
+            const { jsPDF } = window.jspdf;
+
+            // A4 at 96dpi ~ 794px wide. Lock the capture width to this.
+            const A4_WIDTH_PX = 794;
+
+            // Save inline styles we're about to override.
+            const prev = {
+                width: element.style.width,
+                maxWidth: element.style.maxWidth,
+                margin: element.style.margin,
+                boxShadow: element.style.boxShadow,
+                borderRadius: element.style.borderRadius
+            };
+
+            element.style.width = A4_WIDTH_PX + 'px';
+            element.style.maxWidth = A4_WIDTH_PX + 'px';
+            element.style.margin = '0';
+            element.style.boxShadow = 'none';
+            element.style.borderRadius = '0';
+
+            // Let layout settle.
+            await new Promise(r => setTimeout(r, 300));
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                windowWidth: A4_WIDTH_PX,
+                width: A4_WIDTH_PX,
+                scrollX: 0,
+                scrollY: 0
+            });
+
+            // Restore original styles.
+            element.style.width = prev.width;
+            element.style.maxWidth = prev.maxWidth;
+            element.style.margin = prev.margin;
+            element.style.boxShadow = prev.boxShadow;
+            element.style.borderRadius = prev.borderRadius;
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidthMm = 210;
+            const pageHeightMm = 297;
+            const marginMm = 8;
+            const usableWidthMm = pageWidthMm - marginMm * 2;
+            const usableHeightMm = pageHeightMm - marginMm * 2;
+
+            // Pixels of source canvas that fit on one usable page height.
+            const pxPerMm = canvas.width / usableWidthMm;
+            const pageHeightPx = Math.floor(usableHeightMm * pxPerMm);
+
+            let renderedHeightPx = 0;
+            let pageIndex = 0;
+
+            while (renderedHeightPx < canvas.height) {
+                const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedHeightPx);
+
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = sliceHeightPx;
+                const ctx = pageCanvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+                ctx.drawImage(
+                    canvas,
+                    0, renderedHeightPx, canvas.width, sliceHeightPx,
+                    0, 0, canvas.width, sliceHeightPx
+                );
+
+                const sliceData = pageCanvas.toDataURL('image/png');
+                const sliceHeightMm = sliceHeightPx / pxPerMm;
+
+                if (pageIndex > 0) pdf.addPage();
+                pdf.addImage(sliceData, 'PNG', marginMm, marginMm, usableWidthMm, sliceHeightMm);
+
+                renderedHeightPx += sliceHeightPx;
+                pageIndex++;
+            }
+
+            return pdf;
+        }
+
         async function exportPDF() {
             if (!currentDoc) return;
             const element = document.getElementById('printArea');
@@ -6464,34 +6898,9 @@ html {
             showToast('info', 'Generating', 'Creating PDF, please wait...');
 
             try {
-                await new Promise(r => setTimeout(r, 300));
-                const canvas = await html2canvas(element, { 
-                    scale: 2, 
-                    useCORS: true,
-                    logging: false,
-                    windowWidth: element.scrollWidth,
-                    windowHeight: element.scrollHeight
-                });
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 210;
-                const pageHeight = 297;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
+                const pdf = await renderElementToPdf(element);
 
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-
-                while (heightLeft > 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                const filename = `${currentDoc.number || 'document'}.pdf`;
+                const filename = buildPdfFilename(currentDoc);
                 const pdfBlob = pdf.output('blob');
                 const blobUrl = URL.createObjectURL(pdfBlob);
                 const a = document.createElement('a');
@@ -6531,13 +6940,24 @@ html {
         function shareWhatsApp() {
             if (!currentDoc) return;
             const customer = appData.customers.find(c => c.id === currentDoc.customerId);
-            const type = (currentDoc.number || '').startsWith('INV') ? 'Invoice' : 'Quotation';
+            const isInvoice = (currentDoc.number || '').startsWith('INV');
+            const type = isInvoice ? 'Invoice' : 'Quotation';
             const cleanPhone = (customer?.phone || '').replace(/\D/g, '');
+
+            const grand = currentDoc.grandTotal || 0;
+            const paidAmt = isInvoice ? getInvoicePaidAmount(currentDoc.id) : 0;
+            const balanceDue = Math.max(0, grand - paidAmt);
+
+            let amountLines = `*Total Amount:* PKR ${formatNumber(grand)}%0A`;
+            if (isInvoice && paidAmt > 0) {
+                amountLines += `*Amount Paid:* PKR ${formatNumber(paidAmt)}%0A` +
+                    `*Balance Due:* PKR ${formatNumber(balanceDue)}%0A`;
+            }
 
             const message = `Hello ${customer?.name || 'there'},%0A%0A` +
                 `Please find your ${type} details below:%0A%0A` +
                 `*${type}:* ${currentDoc.number || '-'}%0A` +
-                `*Amount:* PKR ${formatNumber(currentDoc.grandTotal || 0)}%0A` +
+                amountLines +
                 `*Date:* ${formatDate(currentDoc.date)}%0A` +
                 `*Due Date:* ${formatDate(currentDoc.dueDate)}%0A%0A` +
                 `Thank you for your business!%0A` +
@@ -6560,39 +6980,46 @@ html {
             showToast('info', 'Generating', 'Creating PDF for sharing...');
 
             try {
-                await new Promise(r => setTimeout(r, 300));
-                const canvas = await html2canvas(element, { 
-                    scale: 2, 
-                    useCORS: true,
-                    logging: false,
-                    windowWidth: element.scrollWidth,
-                    windowHeight: element.scrollHeight
-                });
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 210;
-                const pageHeight = 297;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
-
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-                while (heightLeft > 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                const filename = `${currentDoc.number || 'document'}.pdf`;
+                const pdf = await renderElementToPdf(element);
+                const filename = buildPdfFilename(currentDoc);
                 const pdfBlob = pdf.output('blob');
 
                 const customer = appData.customers.find(c => c.id === currentDoc.customerId);
-                const type = (currentDoc.number || '').startsWith('INV') ? 'Invoice' : 'Quotation';
+                const _isInv = (currentDoc.number || '').startsWith('INV');
+                const type = _isInv ? 'Invoice' : 'Quotation';
                 const cleanPhone = (customer?.phone || '').replace(/\D/g, '');
 
+                const _grand = currentDoc.grandTotal || 0;
+                const _paid = _isInv ? getInvoicePaidAmount(currentDoc.id) : 0;
+                const _bal = Math.max(0, _grand - _paid);
+                let _amtText = `Total: PKR ${formatNumber(_grand)}`;
+                if (_isInv && _paid > 0) {
+                    _amtText += `, Paid: PKR ${formatNumber(_paid)}, Balance Due: PKR ${formatNumber(_bal)}`;
+                }
+                const shareText = `Hello ${customer?.name || 'there'}, please find your ${type} ${currentDoc.number || '-'} attached. ${_amtText}. Thank you for your business!`;
+
+                // Preferred path: native share sheet with the actual PDF file
+                // attached. This lets the user pick WhatsApp and send the PDF in
+                // one step (works on most mobile browsers).
+                const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+                if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                    try {
+                        await navigator.share({
+                            files: [pdfFile],
+                            title: `${type} ${currentDoc.number || ''}`.trim(),
+                            text: shareText
+                        });
+                        showToast('success', 'Shared', 'PDF ready to send.');
+                        return;
+                    } catch (shareErr) {
+                        // User cancelled the share sheet — do nothing further.
+                        if (shareErr && shareErr.name === 'AbortError') return;
+                        // Otherwise fall through to the download + WhatsApp text method.
+                    }
+                }
+
+                // Fallback: download the PDF, then open WhatsApp with a text
+                // message. The user attaches the downloaded file manually.
                 const blobUrl = URL.createObjectURL(pdfBlob);
                 const a = document.createElement('a');
                 a.href = blobUrl;
@@ -6601,13 +7028,11 @@ html {
                 document.body.appendChild(a);
                 a.click();
 
-                showToast('success', 'PDF Saved', 'PDF downloaded! Now opening WhatsApp...');
+                showToast('info', 'PDF Saved', 'PDF downloaded. Attach it in WhatsApp.');
 
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(blobUrl);
-
-                    const shareText = `Hello ${customer?.name || 'there'}, please find your ${type} *${currentDoc.number || '-'}* attached. Amount: *PKR ${formatNumber(currentDoc.grandTotal || 0)}*. Thank you for your business!`;
                     const message = encodeURIComponent(shareText);
                     const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${message}` : `https://wa.me/?text=${message}`;
                     window.open(url, '_blank');
@@ -6625,13 +7050,24 @@ html {
             currentDoc = doc;
 
             const customer = appData.customers.find(c => c.id === doc.customerId);
-            const docType = (doc.number || '').startsWith('INV') ? 'Invoice' : 'Quotation';
+            const isInvoice = (doc.number || '').startsWith('INV');
+            const docType = isInvoice ? 'Invoice' : 'Quotation';
             const cleanPhone = (customer?.phone || '').replace(/\D/g, '');
+
+            const grand = doc.grandTotal || 0;
+            const paidAmt = isInvoice ? getInvoicePaidAmount(doc.id) : 0;
+            const balanceDue = Math.max(0, grand - paidAmt);
+
+            let amountLines = `*Total Amount:* PKR ${formatNumber(grand)}%0A`;
+            if (isInvoice && paidAmt > 0) {
+                amountLines += `*Amount Paid:* PKR ${formatNumber(paidAmt)}%0A` +
+                    `*Balance Due:* PKR ${formatNumber(balanceDue)}%0A`;
+            }
 
             const message = `Hello ${customer?.name || 'there'},%0A%0A` +
                 `Please find your ${docType} details below:%0A%0A` +
                 `*${docType}:* ${doc.number || '-'}%0A` +
-                `*Amount:* PKR ${formatNumber(doc.grandTotal || 0)}%0A` +
+                amountLines +
                 `*Date:* ${formatDate(doc.date)}%0A` +
                 `*Due Date:* ${formatDate(doc.dueDate)}%0A%0A` +
                 `Thank you for your business!%0A` +
@@ -6650,9 +7086,14 @@ html {
             const customer = appData.customers.find(c => c.id === inv.customerId);
             const cleanPhone = (customer?.phone || '').replace(/\D/g, '');
 
+            const grand = inv.grandTotal || 0;
+            const paidAmt = getInvoicePaidAmount(inv.id);
+            const balanceDue = Math.max(0, grand - paidAmt);
+
             const message = `Hello ${customer?.name || 'there'},%0A%0A` +
                 `This is a friendly reminder that your invoice *${inv.number || '-'}* is due.%0A%0A` +
-                `*Amount Due:* PKR ${formatNumber(inv.grandTotal || 0)}%0A` +
+                (paidAmt > 0 ? `*Total Amount:* PKR ${formatNumber(grand)}%0A*Amount Paid:* PKR ${formatNumber(paidAmt)}%0A` : '') +
+                `*Amount Due:* PKR ${formatNumber(balanceDue)}%0A` +
                 `*Due Date:* ${formatDate(inv.dueDate)}%0A%0A` +
                 `Please make the payment at your earliest convenience.%0A%0A` +
                 `Thank you,%0A` +
@@ -6670,7 +7111,12 @@ html {
             appData.settings.phone = document.getElementById('settingPhone').value || '';
             appData.settings.email = document.getElementById('settingEmail').value || '';
             appData.settings.website = document.getElementById('settingWebsite').value || '';
-            appData.settings.terms = document.getElementById('settingTerms').value || '';
+            const invTermsEl = document.getElementById('settingInvoiceTerms');
+            const qtnTermsEl = document.getElementById('settingQuotationTerms');
+            if (invTermsEl) appData.settings.invoiceTerms = invTermsEl.value || '';
+            if (qtnTermsEl) appData.settings.quotationTerms = qtnTermsEl.value || '';
+            // Keep legacy `terms` in sync with the invoice terms for safety.
+            appData.settings.terms = appData.settings.invoiceTerms;
             appData.settings.notes = document.getElementById('settingNotes').value || '';
             saveData();
             applySettingsToDOM();
@@ -6902,6 +7348,64 @@ html {
             document.getElementById('importFileInput').click();
         }
 
+        // ---- Restore from device-side rolling backups ----
+        function showLocalBackups() {
+            let list = [];
+            try { list = JSON.parse(localStorage.getItem('firenet_backups') || '[]'); } catch(e) { list = []; }
+            if (!list.length) {
+                showToast('info', 'No Backups', 'No local backups saved yet on this device.');
+                return;
+            }
+            // Newest first.
+            const lines = list.slice().reverse().map((b, i) => {
+                let d = {};
+                try { d = JSON.parse(b.snapshot); } catch(e) {}
+                const when = new Date(b.ts).toLocaleString();
+                const inv = d.invoices?.length || 0;
+                const cust = d.customers?.length || 0;
+                const pay = d.payments?.length || 0;
+                const qtn = d.quotations?.length || 0;
+                return `${i + 1}. ${when}  —  ${inv} invoices, ${qtn} quotes, ${cust} customers, ${pay} payments`;
+            }).join('\n');
+
+            const choice = prompt(
+                'LOCAL BACKUPS on this device (newest first):\n\n' + lines +
+                '\n\nType the number of the backup to RESTORE, or Cancel to exit.\n' +
+                'Restoring replaces current data on this device and cloud.'
+            );
+            if (choice === null) return;
+            const idx = parseInt(choice, 10);
+            if (isNaN(idx) || idx < 1 || idx > list.length) {
+                showToast('error', 'Invalid', 'No backup with that number.');
+                return;
+            }
+            restoreLocalBackup(list.length - idx); // reverse index back to array index
+        }
+
+        function restoreLocalBackup(arrayIndex) {
+            let list = [];
+            try { list = JSON.parse(localStorage.getItem('firenet_backups') || '[]'); } catch(e) { return; }
+            const entry = list[arrayIndex];
+            if (!entry) { showToast('error', 'Error', 'Backup not found.'); return; }
+
+            if (!confirm('Restore this backup? It will replace current data here and sync to the cloud. A safety backup of the current state will be kept first.')) return;
+
+            // Keep a safety snapshot of the current state before overwriting.
+            try { keepLocalBackup(JSON.stringify(appData)); } catch(e) {}
+
+            try {
+                const restored = JSON.parse(entry.snapshot);
+                appData = { ...appData, ...restored };
+                delete appData._lastSaved; // force a fresh cloud write
+                saveData();
+                applySettingsToDOM();
+                renderAll();
+                showToast('success', 'Restored', 'Backup restored and syncing to cloud.');
+            } catch(e) {
+                showToast('error', 'Error', 'Could not restore that backup.');
+            }
+        }
+
         function handleImportFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -7111,6 +7615,48 @@ html {
             document.body.style.overflow = 'hidden';
         }
 
+        // Load an existing payment into the modal for editing.
+        function editPayment(id) {
+            const p = appData.payments.find(x => x.id === id);
+            if (!p) { showToast('error', 'Error', 'Payment not found'); return; }
+
+            document.getElementById('paymentForm').reset();
+            document.querySelector('#paymentModal .modal-title').textContent = 'Edit Payment';
+
+            populatePaymentInvoiceSelect();
+            populatePaymentBankSelect();
+
+            // The invoice dropdown only lists invoices with a remaining balance.
+            // When editing, the payment's own invoice may be fully paid and thus
+            // absent — add it back so it can be selected.
+            const sel = document.getElementById('paymentInvoice');
+            if (sel && p.invoiceId && !Array.from(sel.options).some(o => o.value === p.invoiceId)) {
+                const inv = appData.invoices.find(i => i.id === p.invoiceId);
+                const customer = inv ? appData.customers.find(c => c.id === inv.customerId) : null;
+                const opt = document.createElement('option');
+                opt.value = p.invoiceId;
+                opt.textContent = inv ? `${inv.number} - ${customer?.name || 'Unknown'}` : p.invoiceId;
+                sel.appendChild(opt);
+            }
+
+            document.getElementById('paymentId').value = p.id;
+            document.getElementById('paymentInvoice').value = p.invoiceId || '';
+            document.getElementById('paymentAmount').value = p.amount || '';
+            document.getElementById('paymentDate').value = p.date || '';
+            document.getElementById('paymentMethod').value = p.method || '';
+            toggleBankSelect();
+            if (p.bankAccountId) document.getElementById('paymentBankAccount').value = p.bankAccountId;
+            if (p.chequeNumber) document.getElementById('paymentChequeNumber').value = p.chequeNumber;
+            if (p.onlineRef) document.getElementById('paymentOnlineRef').value = p.onlineRef;
+            if (p.notes) document.getElementById('paymentNotes').value = p.notes;
+
+            fillPaymentInvoiceDetails();
+
+            document.getElementById('paymentModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        window.editPayment = editPayment;
+
         function populatePaymentInvoiceSelect() {
             const select = document.getElementById('paymentInvoice');
             if (!select) return;
@@ -7197,10 +7743,17 @@ html {
             const inv = appData.invoices.find(i => i.id === payment.invoiceId);
             if (!inv) { showToast('error', 'Error', 'Invoice not found'); return; }
 
-            const paid = getInvoicePaidAmount(payment.invoiceId);
-            const remaining = (inv.grandTotal || 0) - paid;
+            // When editing an existing payment, exclude its previous amount from
+            // the "already paid" total so the remaining-balance check is correct.
+            const editingExisting = appData.payments.some(p => p.id === payment.id);
+            const paidByOthers = appData.payments
+                .filter(p => p.invoiceId === payment.invoiceId && p.id !== payment.id)
+                .reduce((sum, p) => sum + (p.amount || 0), 0);
+            const remaining = (inv.grandTotal || 0) - paidByOthers;
 
-            if (payment.amount > remaining) {
+            // 1-paisa tolerance to absorb floating-point rounding.
+            const EPS = 0.01;
+            if (payment.amount > remaining + EPS) {
                 showToast('warning', 'Warning', `Amount exceeds remaining balance (PKR ${formatNumber(remaining)})`);
                 return;
             }
@@ -7210,8 +7763,12 @@ html {
             else appData.payments.push(payment);
 
             const newPaid = getInvoicePaidAmount(payment.invoiceId);
-            if (newPaid >= inv.grandTotal) inv.status = 'paid';
+            if (newPaid >= (inv.grandTotal || 0) - EPS && (inv.grandTotal || 0) > 0) inv.status = 'paid';
             else if (newPaid > 0) inv.status = 'pending';
+            else {
+                const due = inv.dueDate ? new Date(inv.dueDate) : null;
+                inv.status = (due && due < new Date()) ? 'overdue' : 'pending';
+            }
 
             saveData();
             closeModal('paymentModal');
@@ -7228,7 +7785,7 @@ html {
                 const inv = appData.invoices.find(i => i.id === payment.invoiceId);
                 if (inv) {
                     const newPaid = getInvoicePaidAmount(inv.id);
-                    if (newPaid >= (inv.grandTotal || 0)) inv.status = 'paid';
+                    if (newPaid >= (inv.grandTotal || 0) - 0.01 && (inv.grandTotal || 0) > 0) inv.status = 'paid';
                     else if (newPaid > 0) inv.status = 'pending';
                     else {
                         // No payments left — revert to pending (or overdue if past due date)
@@ -7272,7 +7829,7 @@ html {
                             <td><span class="status-badge status-paid">${faIcon(methodIcons[p.method] || 'circle')} ${methodLabels[p.method] || p.method}</span></td>
                             <td>${bank ? bank.bankName : '-'}</td>
                             <td style="font-family: monospace; font-size: 12px;">${p.chequeNumber || p.onlineRef || '-'}</td>
-                            <td><button class="action-btn" onclick="deletePayment('${p.id}')" title="Delete" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button></td>
+                            <td><button class="action-btn edit" onclick="editPayment('${p.id}')" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></i></button> <button class="action-btn" onclick="deletePayment('${p.id}')" title="Delete" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button></td>
                         </tr>`;
                     }).join('');
                 }
@@ -7297,7 +7854,10 @@ html {
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-size: 18px; font-weight: 800; color: var(--success);">PKR ${formatNumber(p.amount || 0)}</div>
-                                    <button class="action-btn" onclick="deletePayment('${p.id}')" style="color: var(--danger); margin-top: 8px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button>
+                                    <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:8px;">
+                                        <button class="action-btn edit" onclick="editPayment('${p.id}')" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></i></button>
+                                        <button class="action-btn" onclick="deletePayment('${p.id}')" style="color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex-shrink:0;" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></i></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>`;
@@ -7349,7 +7909,7 @@ html {
                 const initials = (c.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 const customerInvoices = appData.invoices.filter(i => i.customerId === c.id);
                 const customerQuotations = appData.quotations.filter(q => q.customerId === c.id);
-                const totalInvoiced = customerInvoices.reduce((sum, i) => sum + (i.grandTotal || 0), 0);
+                const totalInvoiced = customerInvoices.filter(i => i.status !== 'draft' && i.status !== 'cancelled').reduce((sum, i) => sum + (i.grandTotal || 0), 0);
                 const totalPaid = appData.payments.filter(p => {
                     const inv = appData.invoices.find(i => i.id === p.invoiceId);
                     return inv && inv.customerId === c.id;
